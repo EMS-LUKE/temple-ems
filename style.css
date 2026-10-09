@@ -70,7 +70,9 @@ a.btn{color:var(--ink);text-decoration:none;display:inline-flex;align-items:cent
 .fabs{position:absolute;right:12px;left:12px;bottom:14px;z-index:500;display:flex;gap:8px;align-items:stretch;justify-content:flex-end}
 .fab{border:0;background:var(--surface);color:var(--ink);border-radius:14px;min-height:54px;min-width:54px;padding:0 16px;font-weight:700;box-shadow:var(--shadow);display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .fab svg{width:22px;height:22px;flex:none}
-.fab.go{background:var(--accent);color:var(--on-accent);flex:0 1 auto;font-size:1.05rem}
+.fab.go{background:var(--accent);color:var(--on-accent);flex:0 1 auto;font-size:1rem;padding:0 14px;white-space:nowrap}
+.fab{white-space:nowrap;padding:0 12px}
+.fabs{gap:6px}
 .bar{position:absolute;left:10px;right:10px;bottom:80px;z-index:600;background:var(--surface);border-radius:var(--r);padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:var(--shadow)}
 .bar .t{flex:1 1 160px;min-width:0;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .leaflet-control-scale-line{font-size:13px;font-weight:700;padding:2px 6px}
@@ -202,3 +204,9 @@ body>nav button[aria-current="true"]::before{content:"";position:absolute;top:0;
 .vsnew{border:1.5px dashed var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
 .inl.wide2 .fld{flex:1 1 140px}
 .inl.wide2 .fld input[type=text]{flex:1;width:100%;min-width:0;font-family:var(--font);font-size:1rem;font-weight:500;text-align:left}
+.sub{font-size:.8rem;font-weight:700;color:var(--accent);margin-top:4px}
+fieldset[data-sec]{background:var(--surface);border-radius:var(--r);padding:12px;box-shadow:var(--shadow)}
+fieldset[data-sec]>legend{float:left;width:100%;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:4px}
+fieldset[data-sec] .chip{background:var(--bg)}
+fieldset[data-sec] .chip[aria-pressed="true"]{background:var(--plate);color:#fff}
+fieldset[data-sec] .vsrow{background:var(--bg);box-shadow:none}

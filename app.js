@@ -240,7 +240,7 @@ function setPending(ll){
   if(pendMk)pendMk.setLatLng(ll);else pendMk=L.circleMarker(ll,{radius:10,color:"#fff",weight:3,fillColor:"#e53935",fillOpacity:1,interactive:false}).addTo(map);
   var z=zoneAt(ll),t='<div class="t"><span class="pc">'+esc(posCode(ll))+'</span> '+esc(zname(z))+'</div>';
   if(moving&&cases[moving])setBar('<div class="t">把 '+esc(cases[moving].no)+' 移到 <span class="pc">'+esc(posCode(ll))+'</span></div><button type="button" class="btn go" id="moveGo">確定移動</button><button type="button" class="btn" id="pendNo">取消</button>');
-  else setBar(t+'<button type="button" class="btn go" id="pendGo">在此建案</button><button type="button" class="btn" id="pendNo">取消</button>');
+  else setBar(t+'<button type="button" class="btn go" id="pendGo">在此建立案件</button><button type="button" class="btn" id="pendNo">取消</button>');
 }
 function moveStart(id){
   moving=id;$("sheet").hidden=true;form=null;show("map");
@@ -340,7 +340,7 @@ function renderList(){
   var d=all.filter(function(c){return!active(c)}).sort(function(x,y){return y.times.reported-x.times.reported});
   $("nAct").textContent=a.length?String(a.length):"";
   $("list").innerHTML=all.length?a.map(card).join("")+(d.length?'<h2 class="muted">已結束 '+d.length+' 件</h2>':"")+d.map(card).join("")
-   :'<div class="empty"><b>目前沒有案件</b>到「地圖」按「在我的位置建案」，或直接點地圖上患者所在的位置。</div>';
+   :'<div class="empty"><b>目前沒有案件</b>到「地圖」按「在我的位置建立案件」，或直接點地圖上患者所在的位置。</div>';
 }
 function renderStats(){
   var all=cur().filter(function(c){return c.status!=="cancel"});
@@ -428,28 +428,40 @@ function openDetail(id){
   h+='<button type="button" class="btn danger" data-del="'+esc(id)+'">刪除案件（無法復原）</button>';
   openSheet(h);
 }
-/* ---------- 處置紀錄（X C A B C D E） ---------- */
+/* ---------- 處置紀錄（主訴、X C A B C D E） ---------- */
 var NA="無明顯異常";
-var TX=[["X","X 大出血",["止血包紮","填塞止血","止血帶"]],["S","C 脊椎減移",["頸圈","長背板","減移術"]],
- ["A","A 呼吸道",["徒手暢通呼吸道","抽吸","鼻咽","口咽","SGA","ETT"]],["B","B 呼吸",["鼻導管","一般面罩","NRM","BVM"]],
- ["C","C 循環",["蒼白","發紺","骨盆穩固","骨盆不穩"]],["D","D 失能",[]],["E","E 暴露",[]]];
+var CC_T=["跌倒","穿刺傷","撕裂傷","割傷","爆炸傷","截斷傷","鈍挫傷"];
+var CC_N=["意識改變","頭暈","嘔吐","肢體無力","喘","心悸","發燒"];
+var TX=[
+ {k:"X",name:"X 大出血",sit:["穿刺傷","撕裂傷","割傷","爆炸傷","截斷傷"],act:["止血包紮","填塞止血","止血帶"]},
+ {k:"S",name:"C 脊椎減移",sit:[],act:["頸圈","長背板","減移術"]},
+ {k:"A",name:"A 呼吸道",sit:["鼾音","雜音","異物梗塞"],act:["徒手暢通呼吸道","抽吸","鼻咽","口咽","SGA","ETT","哈姆立克"]},
+ {k:"B",name:"B 呼吸",sit:["喘","換氣過度"],act:["鼻導管","一般面罩","NRM","BVM"]},
+ {k:"C",name:"C 循環",sit:["休克","低體溫","蒼白","發紺","骨盆穩固","骨盆不穩"],act:["保暖","輸液"]},
+ {k:"D",name:"D 失能",sit:["低血糖","CVA","ICH"],act:["糖粉"]},
+ {k:"E",name:"E 暴露",sit:[],act:[]}];
 var TXSHORT={X:"X 大出血",S:"C 脊椎",A:"A 呼吸道",B:"B 呼吸",C:"C 循環",D:"D 失能",E:"E 暴露"};
+var AVPU=[["A","A 清"],["V","V 聲"],["P","P 痛"],["U","U 否"]];
+var IV_G=["18","20","21","22","24"], IV_S=["右手","左手","右腳","左腳"], IV_F="N/S 500 mL";
+var DKEYS=["gE","gV","gM","pR","pL","lU","lL"], VKEYS=["spo2","sbp","dbp","glu","temp"];
 function gcsTotal(t){return(t.gE&&t.gV&&t.gM)?Number(t.gE)+Number(t.gV)+Number(t.gM):null}
-function txLines(c){
-  var t=c.tx;if(!t)return[];var out=[];
-  TX.forEach(function(g){
-    var k=g[0],a=(t[k]||[]).slice(),ex=[];
-    if(k==="X"&&t.tq)a=a.map(function(v){return v==="止血帶"?"止血帶（"+t.tq+"）":v});
-    if(k==="C"&&t.crt)ex.push("CRT "+t.crt+" 秒");
-    if(k==="E"&&t.e)ex.push(t.e);
-    var all=a.concat(ex);if(all.length)out.push(TXSHORT[k]+"："+all.join("、"));
-    if(k==="D")dsOf(c).forEach(function(d){var s=dsText(d);if(s)out.push("D 失能 "+hm(d.t)+"："+s)});
-  });
-  vsOf(c).forEach(function(v){var s=vsText(v);if(s)out.push("檢查 "+hm(v.t)+"："+s)});
-  if(t.other)out.push("其他："+t.other);
-  return out;
+// 把舊版資料整理成現在的格式（不改動原資料）
+function txNorm(c){
+  var t=clone(c.tx||{}),base=c.txAt||c.updatedAt||Date.now();
+  if(t.C&&t.C.length){var find=["蒼白","發紺","骨盆穩固","骨盆不穩"],mv=t.C.filter(function(v){return find.indexOf(v)>=0});
+    if(mv.length){t.Cs=(t.Cs||[]).concat(mv);t.C=t.C.filter(function(v){return find.indexOf(v)<0})}}
+  t.vs=(t.vs||[]).slice();
+  if(!t.vs.length&&VKEYS.some(function(k){return t[k]})){var o={t:base};VKEYS.forEach(function(k){if(t[k])o[k]=t[k]});t.vs.push(o)}
+  t.ds=(t.ds||[]).slice();
+  if(!t.ds.length&&DKEYS.some(function(k){return t[k]})){var p={t:base};DKEYS.forEach(function(k){if(t[k])p[k]=t[k]});t.ds.push(p)}
+  VKEYS.concat(DKEYS).forEach(function(k){delete t[k]});
+  t.vs.sort(function(x,y){return x.t-y.t});t.ds.sort(function(x,y){return x.t-y.t});
+  return t;
 }
-var DKEYS=["gE","gV","gM","pR","pL","lU","lL"];
+function vsOf(c){return c.tx?txNorm(c).vs:[]}
+function dsOf(c){return c.tx?txNorm(c).ds:[]}
+function lastVs(c){var a=vsOf(c);return a.length?a[a.length-1]:{}}
+function lastDs(c){var a=dsOf(c);return a.length?a[a.length-1]:{}}
 function dsText(t){
   var ex=[];
   if(t.gE||t.gV||t.gM)ex.push("GCS E"+(t.gE||"_")+"V"+(t.gV||"_")+"M"+(t.gM||"_")+(gcsTotal(t)?"＝"+gcsTotal(t):""));
@@ -457,96 +469,117 @@ function dsText(t){
   if(t.lU||t.lL)ex.push("感覺／運動 上肢 "+(t.lU||"_")+" 下肢 "+(t.lL||"_"));
   return ex.join("、");
 }
-// D 失能多筆評估；相容舊版只存一組的資料
-function dsOf(c){
-  var t=c.tx||{},a=(t.ds||[]).slice();
-  if(!a.length&&DKEYS.some(function(k){return t[k]})){var o={t:c.txAt||c.updatedAt||Date.now()};DKEYS.forEach(function(k){if(t[k])o[k]=t[k]});a.push(o)}
-  return a.sort(function(x,y){return x.t-y.t});
-}
-function lastDs(c){var a=dsOf(c);return a.length?a[a.length-1]:{}}
-function timeOf(id){var d=new Date(),p=($(id).value||"").split(":");if(p.length>=2)d.setHours(Number(p[0]),Number(p[1]),0,0);return d.getTime()}
-function dsList(){
-  var a=form.tx.ds;
-  $("tx-ds").innerHTML=a.length?a.map(function(v,i){return'<div class="vsrow"><b>'+hm(v.t)+'</b><span>'+esc(dsText(v))+'</span><button type="button" class="btn" data-dsdel="'+i+'" aria-label="刪除 '+hm(v.t)+' 這筆">✕</button></div>'}).join(""):'<p class="muted">尚未記錄。填好下面的評估後按「加入這筆」，可以記錄多次。</p>';
-}
-function dsAdd(silent){
-  var v={},n=0;DKEYS.forEach(function(k){var x=$("tx-"+k).value.trim();if(x){v[k]=x;n++}});
-  if(!n){if(!silent)toast("請先填入至少一項評估");return}
-  v.t=timeOf("tx-dt");v.by=me||"未設定";form.tx.ds.push(v);form.tx.ds.sort(function(x,y){return x.t-y.t});
-  DKEYS.forEach(function(k){$("tx-"+k).value=""});$("tx-dt").value=hm(Date.now());gcsShow();
-  dsList();if(!silent)toast("已加入 "+hm(v.t)+" 的評估");
-}
 function vsText(v){var a=[];if(v.spo2)a.push("血氧 "+v.spo2+"%");if(v.sbp||v.dbp)a.push("血壓 "+(v.sbp||"_")+"/"+(v.dbp||"_"));if(v.glu)a.push("血糖 "+v.glu);if(v.temp)a.push("體溫 "+v.temp+"°C");return a.join("、")}
-// 多筆測量；相容舊版只存一組的資料
-function vsOf(c){
-  var t=c.tx||{},a=(t.vs||[]).slice();
-  if(!a.length&&(t.spo2||t.sbp||t.dbp||t.glu||t.temp))a.push({t:c.txAt||c.updatedAt||Date.now(),spo2:t.spo2,sbp:t.sbp,dbp:t.dbp,glu:t.glu,temp:t.temp});
-  return a.sort(function(x,y){return x.t-y.t});
+function ivText(t){var a=[];if(t.ivF)a.push(t.ivF);if(t.ivG||t.ivS)a.push("IC "+(t.ivG?t.ivG+"G":"")+(t.ivS?" "+t.ivS:""));return a.length?"輸液（"+a.join("、").replace(/\s+/g," ")+"）":"輸液"}
+function avpuLabel(v){var f=AVPU.filter(function(a){return a[0]===v})[0];return f?f[1]:""}
+function txLines(c){
+  if(!c.tx)return[];var t=txNorm(c),out=[];
+  var ct=(t.ccT||[]).concat(t.ccTx?[t.ccTx]:[]),cn=(t.ccN||[]).concat(t.ccNx?[t.ccNx]:[]),cc=[];
+  if(ct.length)cc.push("創傷（"+ct.join("、")+"）");if(cn.length)cc.push("非創傷（"+cn.join("、")+"）");
+  if(cc.length)out.push("主訴："+cc.join("；"));
+  TX.forEach(function(g){
+    var k=g.k,act=(t[k]||[]).slice(),sit=(t[k+"s"]||[]).slice(),parts=[];
+    if(act.indexOf(NA)>=0){out.push(TXSHORT[k]+"："+NA)}
+    else{
+      if(k==="X"&&t.tq)act=act.map(function(v){return v==="止血帶"?"止血帶（"+t.tq+"）":v});
+      if(k==="C"){if(t.crt)sit.push("CRT "+t.crt+" 秒");act=act.map(function(v){return v==="輸液"?ivText(t):v})}
+      if(k==="E"&&t.e)sit.push(t.e);
+      if(sit.length)parts.push((g.act.length?"情況 ":"")+sit.join("、"));
+      if(act.length)parts.push((g.sit.length?"處置 ":"")+act.join("、"));
+      if(parts.length)out.push(TXSHORT[k]+"："+parts.join("｜"));
+    }
+    if(k==="S"&&t.avpu)out.push("C 意識："+avpuLabel(t.avpu));
+    if(k==="D")t.ds.forEach(function(d){var s=dsText(d);if(s)out.push("D 失能 "+hm(d.t)+"："+s)});
+  });
+  t.vs.forEach(function(v){var s=vsText(v);if(s)out.push("檢查 "+hm(v.t)+"："+s)});
+  if(t.other)out.push("其他："+t.other);
+  return out;
 }
-function vsList(){
-  var a=form.tx.vs;
-  $("tx-vs").innerHTML=a.length?a.map(function(v,i){return'<div class="vsrow"><b>'+hm(v.t)+'</b><span>'+esc(vsText(v))+'</span><button type="button" class="btn" data-vsdel="'+i+'" aria-label="刪除 '+hm(v.t)+' 這筆">✕</button></div>'}).join(""):'<p class="muted">尚未記錄。填好下面的數值後按「加入這筆」，可以記錄多次。</p>';
+function txChips(key,opts,arr,cls){
+  return'<div class="chips">'+opts.map(function(v){
+    return'<button type="button" class="chip'+(cls?" "+cls:"")+'" data-tx="'+key+'" data-v="'+esc(v)+'" aria-pressed="'+(arr.indexOf(v)>=0)+'">'+esc(v)+'</button>'}).join("")+'</div>';
 }
-function vsRead(){
-  var v={},n=0;["spo2","sbp","dbp","glu","temp"].forEach(function(k){var x=$("tx-"+k).value.trim();if(x){v[k]=x;n++}});
-  if(!n)return null;
-  v.t=timeOf("tx-vt");v.by=me||"未設定";return v;
-}
-function vsAdd(silent){
-  var v=vsRead();if(!v){if(!silent)toast("請先填入至少一個數值");return}
-  form.tx.vs.push(v);form.tx.vs.sort(function(x,y){return x.t-y.t});
-  ["spo2","sbp","dbp","glu","temp"].forEach(function(k){$("tx-"+k).value=""});$("tx-vt").value=hm(Date.now());
-  vsList();if(!silent)toast("已加入 "+hm(v.t)+" 的測量");
-}
-function txChips(k,opts,arr){
-  return'<div class="chips">'+opts.concat([NA]).map(function(v){
-    return'<button type="button" class="chip'+(v===NA?" na":"")+'" data-tx="'+k+'" data-v="'+esc(v)+'" aria-pressed="'+(arr.indexOf(v)>=0)+'">'+esc(v)+'</button>'}).join("")+'</div>';
+function oneChips(key,opts,val){
+  return'<div class="chips">'+opts.map(function(o){var v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;
+    return'<button type="button" class="chip" data-tx1="'+key+'" data-v="'+esc(v)+'" aria-pressed="'+(String(val||"")===String(v))+'">'+esc(l)+'</button>'}).join("")+'</div>';
 }
 function num(id,label,val,unit,w){return'<label class="fld"><span>'+label+'</span><input type="text" inputmode="decimal" id="'+id+'" maxlength="6" value="'+esc(val||"")+'"'+(w?' style="width:'+w+'px"':'')+'>'+(unit?'<span>'+unit+'</span>':'')+'</label>'}
 function sel(id,label,n,val){var h='<label class="fld"><span>'+label+'</span><select id="'+id+'"><option value="">–</option>';for(var i=n;i>=1;i--)h+='<option'+(String(val)===String(i)?" selected":"")+'>'+i+'</option>';return h+'</select></label>'}
+function sub(label){return'<div class="sub">'+label+'</div>'}
 function openTx(id){
-  var c=cases[id];if(!c)return;var t=clone(c.tx||{});t.vs=vsOf(c);t.ds=dsOf(c);["spo2","sbp","dbp","glu","temp"].concat(DKEYS).forEach(function(k){delete t[k]});form={mode:"tx",id:id,tx:t};
-  var h='<div class="top"><div><div class="big">'+esc(caseCode(c))+'</div><div class="muted">處置紀錄　'+esc(c.no)+'</div></div><button type="button" class="btn" data-close>取消</button></div>';
+  var c=cases[id];if(!c)return;var t=txNorm(c);form={mode:"tx",id:id,tx:t};
+  var h='<div class="top"><div><div class="big">'+esc(caseCode(c))+'</div><div class="muted">處置紀錄　'+esc(c.no)+(c.complaint?"　通報主訴："+esc(c.complaint):"")+'</div></div><button type="button" class="btn" data-close>取消</button></div>';
+  h+='<fieldset><legend>主訴</legend>'+sub("創傷")+txChips("ccT",CC_T,t.ccT||[])+'<input type="text" id="tx-ccTx" maxlength="40" placeholder="手動輸入" aria-label="創傷主訴手動輸入" value="'+esc(t.ccTx||"")+'">'+
+     sub("非創傷")+txChips("ccN",CC_N,t.ccN||[])+'<input type="text" id="tx-ccNx" maxlength="40" placeholder="手動輸入" aria-label="非創傷主訴手動輸入" value="'+esc(t.ccNx||"")+'"></fieldset>';
   TX.forEach(function(g){
-    var k=g[0],arr=t[k]||[];h+='<fieldset><legend>'+g[1]+'</legend>'+txChips(k,g[2],arr);
-    if(k==="X")h+='<div class="inl" id="tx-tq-row"'+(arr.indexOf("止血帶")<0?" hidden":"")+'><label class="fld"><span>止血帶時間</span><input type="time" id="tx-tq" value="'+esc(t.tq||"")+'"></label><button type="button" class="btn" id="tx-now">現在</button></div>';
+    var k=g.k,act=t[k]||[],sit=t[k+"s"]||[];h+='<fieldset data-sec="'+k+'"><legend>'+g.name+'</legend>';
+    if(g.sit.length)h+=sub("情況")+txChips(k+"s",g.sit,sit);
     if(k==="C")h+='<div class="inl">'+num("tx-crt","CRT",t.crt,"秒",70)+'</div>';
-    if(k==="D")h+='<p class="muted">意識與神經學評估（可記錄多次）</p><div id="tx-ds" class="vs"></div><div class="vsnew"><div class="inl"><label class="fld"><span>評估時間</span><input type="time" id="tx-dt" value="'+hm(Date.now())+'"></label></div>'+
+    if(k==="E")h+='<input type="text" id="tx-e" maxlength="80" placeholder="手動輸入" aria-label="暴露所見" value="'+esc(t.e||"")+'">';
+    if(k==="D")h+=sub("意識與神經學評估（可記錄多次）")+'<div id="tx-ds" class="vs"></div><div class="vsnew"><div class="inl"><label class="fld"><span>評估時間</span><input type="time" id="tx-dt" value="'+hm(Date.now())+'"></label></div>'+
       '<div class="inl">'+sel("tx-gE","GCS　E",4,"")+sel("tx-gV","V",5,"")+sel("tx-gM","M",6,"")+'<b id="tx-gcs" class="gcs"></b></div>'+
       '<div class="inl">'+num("tx-pR","瞳孔　R","","",64)+num("tx-pL","L","","mm",64)+'</div>'+
       '<p class="muted">感覺／運動功能</p><div class="inl wide2"><label class="fld"><span>上肢</span><input type="text" id="tx-lU" maxlength="20" placeholder="例：正常" value=""></label><label class="fld"><span>下肢</span><input type="text" id="tx-lL" maxlength="20" placeholder="例：麻、無力" value=""></label></div><button type="button" class="btn" id="tx-dsadd">加入這筆</button></div>';
-    if(k==="E")h+='<input type="text" id="tx-e" maxlength="80" placeholder="手動輸入" aria-label="暴露所見" value="'+esc(t.e||"")+'">';
-    h+='</fieldset>';
+    if(g.act.length)h+=sub("處置")+txChips(k,g.act,act);
+    if(k==="X")h+='<div class="inl" id="tx-tq-row"'+(act.indexOf("止血帶")<0?" hidden":"")+'><label class="fld"><span>止血帶時間</span><input type="time" id="tx-tq" value="'+esc(t.tq||"")+'"></label><button type="button" class="btn" id="tx-now">現在</button></div>';
+    if(k==="C")h+='<div class="vsnew" id="tx-iv-row"'+(act.indexOf("輸液")<0?" hidden":"")+'>'+sub("輸液")+oneChips("ivF",[IV_F],t.ivF)+sub("IC 號數")+oneChips("ivG",IV_G,t.ivG)+sub("部位")+oneChips("ivS",IV_S,t.ivS)+'</div>';
+    h+=txChips(k,[NA],act,"na")+'</fieldset>';
+    if(k==="S")h+='<fieldset><legend>C 意識（AVPU）</legend>'+oneChips("avpu",AVPU,t.avpu)+'</fieldset>';
   });
   h+='<fieldset><legend>輔助檢查數值（可記錄多次）</legend><div id="tx-vs" class="vs"></div>'+
-     '<div class="vsnew"><div class="inl"><label class="fld"><span>測量時間</span><input type="time" id="tx-vt" value="'+hm(Date.now())+'"></label></div><div class="inl">'+num("tx-spo2","血氧","","%",70)+'<span class="fld nw"><span>血壓</span><input type="text" inputmode="decimal" id="tx-sbp" maxlength="4" aria-label="收縮壓" value="" style="width:70px"><span>/</span><input type="text" inputmode="decimal" id="tx-dbp" maxlength="4" aria-label="舒張壓" value="" style="width:70px"><span>mmHg</span></span></div>'+
+     '<div class="vsnew"><div class="inl"><label class="fld"><span>測量時間</span><input type="time" id="tx-vt" value="'+hm(Date.now())+'"></label></div><div class="inl">'+num("tx-spo2","血氧","","%",70)+
+     '<span class="fld nw"><span>血壓</span><input type="text" inputmode="decimal" id="tx-sbp" maxlength="4" aria-label="收縮壓" value="" style="width:70px"><span>/</span><input type="text" inputmode="decimal" id="tx-dbp" maxlength="4" aria-label="舒張壓" value="" style="width:70px"><span>mmHg</span></span></div>'+
      '<div class="inl">'+num("tx-glu","血糖","","mg/dL",70)+num("tx-temp","體溫","","°C",70)+'</div><button type="button" class="btn" id="tx-vsadd">加入這筆</button></div></fieldset>'+
      '<fieldset><label class="l" for="tx-other">其他</label><textarea id="tx-other" rows="2" maxlength="300" placeholder="手動輸入">'+esc(t.other||"")+'</textarea></fieldset>'+
      '<div class="sticky"><button type="button" class="btn go" id="tx-save">儲存處置紀錄</button></div>';
   openSheet(h);gcsShow();vsList();dsList();
 }
 function gcsShow(){var g=$("tx-gcs");if(!g)return;var s=gcsTotal({gE:$("tx-gE").value,gV:$("tx-gV").value,gM:$("tx-gM").value});g.textContent=s?"＝ "+s:""}
+function timeOf(id){var d=new Date(),p=($(id).value||"").split(":");if(p.length>=2)d.setHours(Number(p[0]),Number(p[1]),0,0);return d.getTime()}
+function rowList(boxId,arr,textFn,delAttr,emptyMsg){
+  $(boxId).innerHTML=arr.length?arr.map(function(v,i){return'<div class="vsrow"><b>'+hm(v.t)+'</b><span>'+esc(textFn(v))+'</span><button type="button" class="btn" '+delAttr+'="'+i+'" aria-label="刪除 '+hm(v.t)+' 這筆">✕</button></div>'}).join(""):'<p class="muted">'+emptyMsg+'</p>';
+}
+function vsList(){rowList("tx-vs",form.tx.vs,vsText,"data-vsdel","尚未記錄。填好下面的數值後按「加入這筆」，可以記錄多次。")}
+function dsList(){rowList("tx-ds",form.tx.ds,dsText,"data-dsdel","尚未記錄。填好下面的評估後按「加入這筆」，可以記錄多次。")}
+function rowAdd(keys,timeId,arr,silent,what){
+  var v={},n=0;keys.forEach(function(k){var x=$("tx-"+k).value.trim();if(x){v[k]=x;n++}});
+  if(!n){if(!silent)toast("請先填入至少一項");return false}
+  v.t=timeOf(timeId);v.by=me||"未設定";arr.push(v);arr.sort(function(x,y){return x.t-y.t});
+  keys.forEach(function(k){$("tx-"+k).value=""});$(timeId).value=hm(Date.now());
+  if(!silent)toast("已加入 "+hm(v.t)+" 的"+what);return true;
+}
+function vsAdd(silent){if(rowAdd(VKEYS,"tx-vt",form.tx.vs,silent,"測量"))vsList()}
+function dsAdd(silent){if(rowAdd(DKEYS,"tx-dt",form.tx.ds,silent,"評估")){gcsShow();dsList()}}
+function txRefresh(scope){
+  scope.querySelectorAll(".chip[data-tx]").forEach(function(b){b.setAttribute("aria-pressed",String((form.tx[b.dataset.tx]||[]).indexOf(b.dataset.v)>=0))});
+}
 function txClick(t){
-  var k=t.dataset.tx,v=t.dataset.v,arr=(form.tx[k]||[]).slice(),i=arr.indexOf(v);
-  if(v===NA)arr=i>=0?[]:[NA];
-  else{
-    arr=arr.filter(function(x){return x!==NA});i=arr.indexOf(v);
+  var key=t.dataset.tx,v=t.dataset.v,tx=form.tx,isSit=key.length===2&&key.charAt(1)==="s",base=isSit?key.charAt(0):key;
+  if(v===NA){
+    if((tx[base]||[]).indexOf(NA)>=0)tx[base]=[];else{tx[base]=[NA];tx[base+"s"]=[]}
+  }else{
+    tx[base]=(tx[base]||[]).filter(function(x){return x!==NA});
+    var arr=(tx[key]||[]).slice(),i=arr.indexOf(v);
     if(i>=0)arr.splice(i,1);else{arr.push(v);
       if(v==="骨盆穩固")arr=arr.filter(function(x){return x!=="骨盆不穩"});
       if(v==="骨盆不穩")arr=arr.filter(function(x){return x!=="骨盆穩固"});}
+    tx[key]=arr;
   }
-  form.tx[k]=arr;
-  t.parentNode.querySelectorAll(".chip").forEach(function(b){b.setAttribute("aria-pressed",String(arr.indexOf(b.dataset.v)>=0))});
-  if(k==="X"){var on=arr.indexOf("止血帶")>=0;$("tx-tq-row").hidden=!on;if(on&&!$("tx-tq").value)$("tx-tq").value=hm(Date.now())}
+  txRefresh(t.closest("fieldset"));
+  if(base==="X"){var on=(tx.X||[]).indexOf("止血帶")>=0;$("tx-tq-row").hidden=!on;if(on&&!$("tx-tq").value)$("tx-tq").value=hm(Date.now())}
+  if(base==="C")$("tx-iv-row").hidden=(tx.C||[]).indexOf("輸液")<0;
+}
+function tx1Click(t){
+  var k=t.dataset.tx1,v=t.dataset.v;form.tx[k]=form.tx[k]===v?"":v;
+  t.parentNode.querySelectorAll(".chip").forEach(function(b){b.setAttribute("aria-pressed",String(form.tx[k]===b.dataset.v))});
 }
 function txSave(){
-  var c=clone(cases[form.id]),t=form.tx,map={tq:"tx-tq",crt:"tx-crt",e:"tx-e",other:"tx-other"};
+  var c=clone(cases[form.id]),t=form.tx,map={tq:"tx-tq",crt:"tx-crt",e:"tx-e",other:"tx-other",ccTx:"tx-ccTx",ccNx:"tx-ccNx"};
   vsAdd(true);dsAdd(true);
   Object.keys(map).forEach(function(k){var v=$(map[k]).value.trim();if(v)t[k]=v;else delete t[k]});
   if((t.X||[]).indexOf("止血帶")<0)delete t.tq;
-  TX.forEach(function(g){if(t[g[0]]&&!t[g[0]].length)delete t[g[0]]});
-  if(!t.vs.length)delete t.vs;
-  if(!t.ds.length)delete t.ds;
+  if((t.C||[]).indexOf("輸液")<0){delete t.ivF;delete t.ivG;delete t.ivS}
+  Object.keys(t).forEach(function(k){if(t[k]===""||(Array.isArray(t[k])&&!t[k].length))delete t[k]});
   c.tx=t;c.txAt=Date.now();c.txBy=me||"未設定";
   form=null;$("sheet").hidden=true;save(c);toast("處置紀錄已儲存");
 }
@@ -579,13 +612,12 @@ function step(id,to){
   if(to==="closed"){c.times.closed=now;c.disposition=c.times.transport?"後送":"現場處置"}
   c.status=to;$("sheet").hidden=true;form=null;save(c);toast(caseCode(c)+" "+STAT[to]+" "+hm(now));
 }
-function lastVs(c){var a=vsOf(c);return a.length?a[a.length-1]:{}}
 function exportText(sep,eid){
-  var head=["案號","區碼","位置碼","區名","地標","主訴","檢傷","性別","年齡層","狀態","處置","出勤人員","通報","出勤","到達","後送","結案","到達分鐘","緯度","經度","備註","建立者","處置紀錄","評估次數","最後 GCS","測量次數","最後測量時間","血氧","收縮壓","舒張壓","血糖","體溫"];
+  var head=["案號","區碼","位置碼","區名","地標","主訴","檢傷","性別","年齡層","狀態","處置","出勤人員","通報","出勤","到達","後送","結案","到達分鐘","緯度","經度","備註","建立者","處置紀錄","AVPU","評估次數","最後 GCS","測量次數","最後測量時間","血氧","收縮壓","舒張壓","血糖","體溫"];
   var rows=casesOf(eid||site.eventId).sort(function(a,b){return a.times.reported-b.times.reported}).map(function(c){
     return[c.no,c.zone,caseCode(c),zname(c.zone),c.landmark,c.complaint,["","紅","黃","綠"][c.triage]||"",c.sex,c.age,STAT[c.status],c.disposition,c.crew,
       hm(c.times.reported),hm(c.times.dispatched),hm(c.times.arrived),hm(c.times.transport),hm(c.times.closed),
-      mins(c.times.reported,c.times.arrived),c.lat?c.lat.toFixed(6):"",c.lng?c.lng.toFixed(6):"",c.note,c.createdBy,txLines(c).join("；"),dsOf(c).length||"",gcsTotal(lastDs(c))||"",vsOf(c).length||"",lastVs(c).t?hm(lastVs(c).t):"",lastVs(c).spo2,lastVs(c).sbp,lastVs(c).dbp,lastVs(c).glu,lastVs(c).temp].map(function(v){
+      mins(c.times.reported,c.times.arrived),c.lat?c.lat.toFixed(6):"",c.lng?c.lng.toFixed(6):"",c.note,c.createdBy,txLines(c).join("；"),(c.tx||{}).avpu||"",dsOf(c).length||"",gcsTotal(lastDs(c))||"",vsOf(c).length||"",lastVs(c).t?hm(lastVs(c).t):"",lastVs(c).spo2,lastVs(c).sbp,lastVs(c).dbp,lastVs(c).glu,lastVs(c).temp].map(function(v){
         v=String(v==null?"":v).replace(/[\t\n\r]+/g," ");return sep===","?'"'+v.replace(/"/g,'""')+'"':v}).join(sep)});
   return{text:[head.join(sep)].concat(rows).join("\n"),n:rows.length};
 }
@@ -646,6 +678,7 @@ document.addEventListener("click",function(e){
   if(d.codeopen)return openCode();
   if(d.txopen)return openTx(d.txopen);
   if(d.tx&&form&&form.mode==="tx")return txClick(t);
+  if(d.tx1&&form&&form.mode==="tx")return tx1Click(t);
   if(id==="tx-now"){$("tx-tq").value=hm(Date.now());return}
   if(id==="tx-save")return txSave();
   if(id==="tx-vsadd")return vsAdd(false);
