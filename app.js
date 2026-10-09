@@ -40,6 +40,7 @@ function mins(a,b){return(a&&b)?Math.round((b-a)/60000):null}
 function cur(){return Object.keys(cases).map(function(k){return cases[k]}).filter(function(c){return c.eventId===site.eventId})}
 function active(c){return c.status!=="closed"&&c.status!=="cancel"}
 function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2800)}
+function unsynced(id){return !!(CFG.firebase&&team&&dirty[id])}
 function radio(c){return[c.zone+" "+zname(c.zone),c.landmark,[c.sex,c.age].filter(Boolean).join(""),c.complaint].filter(Boolean).join("、")}
 
 /* ---------- 座標換算 ---------- */
@@ -72,7 +73,7 @@ function flush(){
     var sent=c.updatedAt;sending[id]=sent;
     root.collection("cases").doc(id).set(clone(c)).then(function(){
       if(cases[id]&&cases[id].updatedAt===sent){delete dirty[id];persist()}
-      delete sending[id];syncErr="";syncPill();
+      delete sending[id];syncErr="";syncPill();if($("sheet").hidden)renderList();
     },function(e){delete sending[id];syncErr=(e&&e.code)||"error";syncPill()});
   });
   syncPill();
@@ -211,7 +212,7 @@ function card(c){
   var h='<article class="case'+(active(c)?"":" done")+'"><div class="code t'+(c.triage||3)+'">'+esc(c.zone)+'</div>'+
    '<div class="body"><div class="where">'+esc(zname(c.zone))+(c.landmark?"・"+esc(c.landmark):"")+'</div>'+
    '<div class="meta">'+esc(c.complaint||"未填主訴")+" "+esc([c.sex,c.age].filter(Boolean).join(""))+(g?"・"+esc(g):"")+'</div></div>'+
-   '<div class="body meta">'+esc(c.no)+"・"+STAT[c.status]+(c.crew?"・"+esc(c.crew):"")+(el!==null?"・已 "+el+" 分":"")+'</div><div class="row">';
+   '<div class="body meta">'+esc(c.no)+"・"+STAT[c.status]+(c.crew?"・"+esc(c.crew):"")+(el!==null?"・已 "+el+" 分":"")+'</div>'+(unsynced(c.id)?'<div class="body" style="grid-column:1/-1"><span class="pill warn">尚未同步，請用無線電補報</span></div>':'')+'<div class="row">';
   (NEXT[c.status]||[]).forEach(function(n){h+='<button type="button" class="btn go" data-step="'+n[0]+'" data-id="'+esc(c.id)+'">'+n[1]+'</button>'});
   return h+'<button type="button" class="btn" data-open="'+esc(c.id)+'">詳細</button></div></article>';
 }
@@ -270,6 +271,7 @@ function openDetail(id){
   var c=cases[id];if(!c)return;form={mode:"detail",id:id,triage:c.triage};
   var ll=caseLL(c),g=active(c)?guide(ll):"";
   var h='<div class="top"><div><div class="big">'+esc(c.zone)+'</div><div class="muted">'+esc(c.no)+"・"+STAT[c.status]+(c.disposition?"・"+esc(c.disposition):"")+'</div></div><button type="button" class="btn" data-close>關閉</button></div>'+
+   (unsynced(id)?'<div class="warnbox">這筆的最新狀態還沒傳出去，其他人看不到，請用無線電補報。</div>':'')+
    (g?'<div class="guide">從你的位置：'+esc(g)+'</div>':'')+
    '<fieldset><legend>無線電報位</legend><div class="radio">'+esc(radio(c))+'</div></fieldset><div class="rowb">';
   (NEXT[c.status]||[]).forEach(function(n){h+='<button type="button" class="btn go" data-step="'+n[0]+'" data-id="'+esc(id)+'">'+n[1]+'</button>'});
