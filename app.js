@@ -22,6 +22,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
+var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務";
 
 /* ---------- 狀態 ---------- */
 var cases=ls("ems.cases")||{}, dirty=ls("ems.dirty")||{}, me=ls("ems.me")||"", team=ls("ems.team")||"";
@@ -234,12 +235,12 @@ function renderStats(){
 function renderSettings(){
   var ae=document.activeElement;if(ae&&$("v-stat").contains(ae)&&ae.tagName==="INPUT")return;
   $("zedit").innerHTML=CODES.map(function(c){return'<code>'+c+'</code><input type="text" id="z-'+c+'" maxlength="20" aria-label="'+c+' 區名" value="'+esc(zname(c))+'">'}).join("");
-  $("evInput").value=site.eventName||"";$("teamInput").value=team;
+  $("teamInput").value=team;
   $("teamInfo").textContent=!CFG.firebase?"尚未設定 Firebase（見 README），目前是單機模式，輸入代碼也不會同步。":(team?"目前代碼："+team:"尚未輸入，資料只存在這支手機。");
   tileCount();
 }
 function render(){
-  $("evName").textContent=site.eventName||"聖母廟救護案件";
+  $("evName").textContent=EVENT_NAME;
   $("who").textContent=me?"呼號："+me:"設定呼號";
   drawGrid();drawCases();renderList();renderStats();syncPill();
 }
@@ -417,7 +418,6 @@ document.addEventListener("click",function(e){
   }
   if(id==="getTiles")return getTiles(t);
   if(id==="saveZ"){var z={};CODES.forEach(function(c){var v=$("z-"+c).value.trim();if(v&&v!==DEF[c])z[c]=v});site.zones=z;saveSite("區名已儲存");return}
-  if(id==="saveEv"){site.eventName=$("evInput").value.trim();saveSite("名稱已儲存");return}
   if(id==="saveTeam"){
     var tv=$("teamInput").value.trim();
     if(tv&&!/^[A-Za-z0-9_-]{6,40}$/.test(tv))return toast("代碼需為 6–40 碼英數字");
@@ -426,7 +426,7 @@ document.addEventListener("click",function(e){
   if(id==="newEv"){
     if(d.sure!=="1"){d.sure="1";t.textContent="再按一次確定：開始新活動";setTimeout(function(){d.sure="";t.textContent="開始新活動（舊案件不再顯示）"},5000);return}
     d.sure="";t.textContent="開始新活動（舊案件不再顯示）";
-    site.eventId="e"+Date.now().toString(36);site.eventName=$("evInput").value.trim();saveSite("已開始新活動");return;
+    site.eventId="e"+Date.now().toString(36);site.eventName=EVENT_NAME;saveSite("已開始新活動");return;
   }
 });
 $("sheet").addEventListener("change",function(e){if(e.target.id==="f-zone"&&$("f-big"))$("f-big").textContent=e.target.value});

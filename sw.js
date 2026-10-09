@@ -1,5 +1,5 @@
 // 更新任何檔案後，請把版本號加一，手機才會抓到新版。
-var VERSION = "v3";
+var VERSION = "v4";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
