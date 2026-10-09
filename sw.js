@@ -1,9 +1,9 @@
 // 更新任何檔案後，一定要把版本號加一，手機才會抓到新版（會整包一起換，不會新舊混用）。
-var VERSION = "v33";
+var VERSION = "v34";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
-  "./", "index.html", "style.css", "app.js", "config.js", "manifest.webmanifest",
+  "./", "index.html", "style.css", "app.js", "theme.js", "config.js", "manifest.webmanifest",
   "leaflet.js", "leaflet.css",
   "layers.png", "layers-2x.png",
   "marker-icon.png", "marker-icon-2x.png", "marker-shadow.png",

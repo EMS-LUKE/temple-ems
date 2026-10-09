@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
+<script src="theme.js"></script>
 <link rel="stylesheet" href="leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -63,6 +64,13 @@
       <input type="text" id="teamInput" maxlength="40" autocomplete="off" autocapitalize="off" placeholder="例：luermen2027a">
       <button class="btn" id="saveTeam" type="button">儲存勤務代碼</button>
       <p class="muted" id="teamInfo"></p>
+
+      <h2>外觀</h2>
+      <div class="chips seg" id="themeSeg">
+        <button type="button" class="chip" data-theme-set="auto" aria-pressed="false">跟隨手機</button>
+        <button type="button" class="chip" data-theme-set="dark" aria-pressed="false">深色</button>
+        <button type="button" class="chip" data-theme-set="light" aria-pressed="false">淺色</button>
+      </div>
 
       <h2>隱私</h2>
       <button class="btn" id="shareBtn" type="button">位置分享</button>

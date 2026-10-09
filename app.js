@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v33";
+var APP_VERSION="v34";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -376,6 +376,7 @@ function renderSettings(){
     return'<div class="pev"><div><b>'+esc(md(Math.min.apply(null,t)))+' ～ '+esc(md(Math.max.apply(null,t)))+'</b>　'+t.length+' 件</div><div class="rowb"><button type="button" class="btn" data-evdl="'+esc(k)+'">下載 CSV</button><button type="button" class="btn" data-evback="'+esc(k)+'">切回這場活動</button></div></div>'}).join("")
     :'<p class="muted">沒有過去的活動。按過「開始新活動」之後，先前的案件會列在這裡，可以下載或切回去。</p>';
   $("verInfo").textContent="目前版本 "+APP_VERSION;
+  var th=ls("ems.theme")||"auto";document.querySelectorAll("#themeSeg .chip").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.themeSet===th))});
   $("shareBtn").textContent="位置分享："+(share?"開啟中（點一下關閉）":"已關閉（點一下開啟）");
   $("teamInput").value=team;
   $("teamInfo").textContent=!CFG.firebase?"尚未設定 Firebase（見 README），目前是單機模式，輸入代碼也不會同步。":(team?"目前代碼："+team:"尚未輸入，資料只存在這支手機。");
@@ -810,6 +811,7 @@ document.addEventListener("click",function(e){
   if(d.tab)return show(d.tab);
   if((id==="f-save"||id==="f-update"||id==="tx-save")&&hasPII())return toast("請勿輸入身分證字號或電話，刪除後再儲存");
   if(id==="helpBtn"||id==="helpOpen")return openHelp();
+  if(d.themeSet){ls("ems.theme",d.themeSet);if(d.themeSet==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",d.themeSet);renderSettings();return}
   if(id==="shareBtn"){share=!share;ls("ems.share",share);if(!share&&root)root.collection("crew").doc(dev).delete().catch(function(){});lastPub={t:0,ll:null};renderSettings();toast(share?"已開啟位置分享":"已關閉位置分享，隊友看不到你的位置");return}
   if(id==="wipeLocal"){var nd=Object.keys(dirty).length;return askCode(nd?"清除資料（有 "+nd+" 筆尚未上傳，會遺失）":"登出並清除這支手機上的資料",function(){localWipe(function(){ls("ems.team","");location.reload()})})}
   if(id==="wipeCloud")return askCode("永久刪除全部案件（無法復原）",wipeCloud);
