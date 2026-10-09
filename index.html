@@ -21,12 +21,16 @@
   <span class="pill" id="sync">單機模式</span>
 </header>
 
+<div id="alert" class="alert" hidden><button type="button" id="alertOpen"><b id="alertText"></b><span>點這裡查看</span></button><button type="button" id="alertNo" aria-label="關閉提醒">✕</button></div>
+
 <main>
   <section id="v-map">
     <div id="map"></div>
     <div id="gps" class="gps">定位中…</div>
+    <div id="nav" class="navbox" hidden><div id="navArrow" class="arrow" aria-hidden="true">↑</div><button type="button" id="navOpen" class="navmain"><b id="navText"></b><span id="navDist"></span><small id="navMode"></small></button><button type="button" id="navStop" class="btn" aria-label="結束導引">✕</button></div>
     <div class="fabs">
       <button type="button" class="fab" id="locate" aria-label="回到我的位置">◎</button>
+      <button type="button" class="fab" data-codeopen="1">位置碼</button>
       <button type="button" class="fab go" id="here">＋ 我的位置建案</button>
     </div>
     <div class="bar" id="bar" hidden></div>
@@ -50,6 +54,7 @@
       <p class="muted">請在訊號良好的地方（出勤前、家裡 Wi-Fi）按一次，每支手機都要各自下載。</p>
 
       <h2>分區</h2>
+      <p class="muted" id="cellInfo"></p>
       <button class="btn" id="calib" type="button">校正分區（在地圖上點三個角）</button>
       <button class="btn danger" id="resetGrid" type="button">還原成預設分區位置</button>
       <div class="zedit" id="zedit"></div>

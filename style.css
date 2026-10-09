@@ -30,10 +30,12 @@ main>section{position:absolute;inset:0}
 .pill.ok{color:var(--grn)}
 .muted{color:var(--muted);font-size:.875rem;margin:0}
 #map{position:absolute;inset:0;background:var(--surface2)}
+.leaflet-control-scale-line{font-size:13px;font-weight:700;padding:2px 6px}
+.leaflet-bottom.leaflet-left{bottom:70px}
 .gps{position:absolute;top:10px;left:10px;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:.85rem;max-width:calc(100% - 80px)}
 .gps b{font-family:var(--num);font-size:1.3rem;margin-right:6px}
 .fabs{position:absolute;right:12px;bottom:14px;z-index:500;display:flex;gap:8px;align-items:center}
-.fab{border:1px solid var(--line);background:var(--surface);border-radius:999px;min-height:52px;min-width:52px;padding:0 18px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.fab{border:1px solid var(--line);background:var(--surface);border-radius:999px;min-height:52px;min-width:52px;padding:0 14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .fab.go{background:var(--accent);color:var(--on-accent);border-color:transparent}
 .bar{position:absolute;left:10px;right:10px;bottom:76px;z-index:600;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .bar .t{flex:1 1 160px;min-width:0;font-weight:700}
@@ -44,13 +46,13 @@ a.btn{color:var(--ink);text-decoration:none;display:inline-flex;align-items:cent
 /* 地圖標記 */
 .zl{font-family:var(--num);font-weight:800;font-size:15px;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 0 6px #000;text-align:center;white-space:nowrap;pointer-events:none}
 .zl small{display:block;font-family:var(--font);font-weight:600;font-size:10px}
-.cm{width:38px;height:38px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center;font-family:var(--num);font-weight:800;font-size:13px;color:#fff;box-shadow:0 0 0 2px #000,0 2px 6px rgba(0,0,0,.5)}
+.cm{width:44px;height:44px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center;font-family:var(--num);font-weight:800;font-size:12px;color:#fff;box-shadow:0 0 0 2px #000,0 2px 6px rgba(0,0,0,.5)}
 .cm.t1,.cm.t2,.cm.t3,.cm.done{color:#fff}
 .cm.t1{background:#c62828}.cm.t2{background:#b26a00}.cm.t3{background:#22692a}.cm.done{background:#666;opacity:.7}
 .crew{background:#0b5cad;color:#fff;border:2px solid #fff;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 /* 案件 */
 .case{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start}
-.case .code{font-family:var(--num);font-weight:800;font-size:2rem;line-height:1;padding:8px 10px;border-radius:6px;grid-row:span 2;text-align:center;min-width:64px}
+.case .code{font-family:var(--num);font-weight:800;font-size:1.5rem;line-height:1;padding:8px 10px;border-radius:6px;grid-row:span 2;text-align:center;min-width:64px}
 .case .body{min-width:0}
 .case .where{font-weight:700;overflow-wrap:anywhere}
 .case .meta{font-size:.875rem;color:var(--muted);overflow-wrap:anywhere}
@@ -88,3 +90,23 @@ nav{background:var(--surface);border-top:1px solid var(--line);display:flex;padd
 nav button{flex:1;border:0;background:none;padding:12px 4px;min-height:54px;font-weight:600;color:var(--muted);border-top:3px solid transparent}
 nav button[aria-current="true"]{color:var(--accent);border-top-color:var(--accent)}
 #toast{position:fixed;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:8px;padding:10px 14px;text-align:center;z-index:3000}
+
+/* 位置碼、導引、提醒 */
+.pc{font-family:var(--num);font-size:1.3rem;font-weight:800}
+.zs{font-family:var(--num);font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;text-align:center;opacity:.85;pointer-events:none}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:240px}
+.kp .chip{border-radius:8px;min-height:48px;font-family:var(--num);font-size:1.2rem;font-weight:700}
+.zg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:300px}
+.zg .chip{border-radius:8px;min-height:44px;font-family:var(--num);font-weight:700}
+.navbox{position:absolute;top:58px;left:10px;right:10px;z-index:550;background:var(--surface);border:2px solid var(--accent);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.arrow{flex:none;width:52px;height:52px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:2rem;font-weight:800;line-height:1;transition:transform .15s linear}
+.navmain{flex:1;min-width:0;border:0;background:none;text-align:left;padding:0;display:flex;flex-direction:column}
+.navmain b{font-size:1.15rem;overflow-wrap:anywhere}
+.navmain span{font-size:1.05rem;font-weight:700;color:var(--accent)}
+.navmain small{color:var(--muted);font-size:.75rem}
+.alert{display:flex;align-items:stretch;border-bottom:2px solid currentColor}
+.alert #alertOpen{flex:1;min-width:0;border:0;background:none;color:inherit;text-align:left;padding:10px 16px;display:flex;flex-direction:column}
+.alert #alertOpen b{font-size:1.15rem;overflow-wrap:anywhere}
+.alert #alertOpen span{font-size:.85rem}
+.alert #alertNo{border:0;background:none;color:inherit;padding:0 18px;font-size:1.2rem;min-width:52px}
+@media (prefers-reduced-motion: reduce){.arrow{transition:none}}
