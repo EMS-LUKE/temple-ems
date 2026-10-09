@@ -106,7 +106,7 @@ function connect(){
     if(!s.exists)return;var r=s.data();
     if((r.updatedAt||0)<=(site.updatedAt||0))return;
     site={eventId:r.eventId||"e0",eventName:r.eventName||"",zones:r.zones||{},grid:r.grid||null,updatedAt:r.updatedAt||0};
-    ls("ems.site",site);drawGrid();render();renderSettings();
+    ls("ems.site",site);drawGrid();render();renderSettings();gpsBox();
   },function(){});
   root.collection("crew").onSnapshot(function(snap){
     crew={};snap.forEach(function(d){if(d.id!==dev)crew[d.id]=d.data()});drawCrew();
@@ -114,7 +114,7 @@ function connect(){
   flush();
 }
 function saveSite(msg){
-  site.updatedAt=Date.now();ls("ems.site",site);drawGrid();render();
+  site.updatedAt=Date.now();ls("ems.site",site);drawGrid();render();gpsBox();
   if(!root)return toast((msg||"已儲存")+"（本機）");
   root.collection("meta").doc("site").set(clone(site)).then(function(){toast(msg||"已儲存")},function(){toast("同步失敗，只存在這支手機")});
   toast((msg||"已儲存")+"，有訊號時會同步給全隊");
@@ -381,6 +381,10 @@ document.addEventListener("click",function(e){
   if(id==="pendNo")return clearPending();
   if(id==="pendGo"){var p1=pending;clearPending();if(!me)return askMe(function(){openNew(p1,0)});return openNew(p1,0)}
   if(id==="calCancel"){calib=null;setBar("");drawGrid();return}
+  if(id==="resetGrid"){
+    if(d.sure!=="1"){d.sure="1";t.textContent="再按一次確定還原";setTimeout(function(){d.sure="";t.textContent="還原成預設分區位置"},5000);return}
+    d.sure="";t.textContent="還原成預設分區位置";site.grid=null;saveSite("已還原預設分區");show("map");map.setView(CFG.center||[23.068,120.1272],18);return;
+  }
   if(id==="calib"){calib=[];clearPending();show("map");calibBar();return}
   if(id==="f-me-save"){var v2=$("f-me").value.trim();if(!v2)return toast("請輸入呼號");me=v2;ls("ems.me",me);var th=form&&form.then;closeSheet();if(th)th();return}
   if(id==="f-save"){
