@@ -1,5 +1,5 @@
 // 更新任何檔案後，請把版本號加一，手機才會抓到新版。
-var VERSION = "v16";
+var VERSION = "v17";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
@@ -8,6 +8,7 @@ var FILES = [
   "layers.png", "layers-2x.png",
   "marker-icon.png", "marker-icon-2x.png", "marker-shadow.png",
   "firebase-app-compat.js", "firebase-firestore-compat.js",
+  "bc-600.woff2", "bc-700.woff2",
   "icon-180.png", "icon-192.png", "icon-512.png"
 ];
 

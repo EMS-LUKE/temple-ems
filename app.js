@@ -19,7 +19,7 @@ var MARKS=["戶外","走廊","金爐旁","香爐旁","涼亭","廁所","階梯",
 function who(c){return[c.sex==="其他"?"性別其他":c.sex,c.age==="其他"?"年齡其他":c.age].filter(Boolean).join("")}
 var STAT={new:"待出勤",enroute:"出勤中",onscene:"處置中",transport:"後送中",closed:"結案",cancel:"取消"};
 var TKEY=[["reported","通報"],["dispatched","出勤"],["arrived","到達"],["transport","後送"],["closed","結案"]];
-var TRI=[{v:1,l:"紅　危急",c:"t1"},{v:2,l:"黃　緊急",c:"t2"},{v:3,l:"綠　輕症",c:"t3"}];
+var TRI=[{v:1,l:"紅 危急",c:"t1"},{v:2,l:"黃 緊急",c:"t2"},{v:3,l:"綠 輕症",c:"t3"}];
 var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],onscene:[["transport","後送"],["closed","現場結案"]],transport:[["closed","結案"]]};
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
@@ -219,8 +219,8 @@ function drawMe(){
 }
 function gpsBox(){
   var g=$("gps");
-  if(!pos){g.textContent=gpsBox.err||"定位中…";return}
-  g.innerHTML="<b>"+esc(posCode(pos.ll))+"</b>"+esc(zname(zoneAt(pos.ll)))+"　±"+Math.round(pos.acc)+" 公尺";
+  if(!pos){g.className="gps wait";g.textContent=gpsBox.err||"定位中…";return}
+  g.className="gps";g.innerHTML='<span class="plate sm">'+esc(posCode(pos.ll))+'</span><span class="gz">'+esc(zname(zoneAt(pos.ll)))+'<small>你的位置，誤差 ±'+Math.round(pos.acc)+' 公尺</small></span>';
 }
 function startGPS(){
   if(!navigator.geolocation){gpsBox.err="這支手機不支援定位";return gpsBox()}
@@ -288,7 +288,7 @@ function drawNav(){
   $("navText").textContent=[caseCode(c),c.landmark,who(c),c.complaint].filter(Boolean).join("、");
   if(!pos||!ll){ar.style.visibility="hidden";$("navDist").textContent="等待定位…";$("navMode").textContent="";return}
   var b=bearingTo(ll);
-  if(b.m<8){ar.style.visibility="hidden";$("navDist").textContent="就在附近（8 公尺內）";$("navMode").textContent=""}
+  if(b.m<8){ar.style.visibility="hidden";$("navDist").textContent="就在附近";$("navMode").textContent=""}
   else{
     ar.style.visibility="visible";ar.style.transform="rotate("+Math.round(heading!==null?b.brg-heading:b.brg)+"deg)";
     $("navDist").textContent=DIR8[Math.round(b.brg/45)%8]+"方 "+b.m+" 公尺";
@@ -317,28 +317,36 @@ function renderAlert(){
 }
 
 /* ---------- 列表與統計 ---------- */
+function stepper(c){
+  return'<ol class="steps">'+TKEY.map(function(k){var t=c.times[k[0]];return'<li class="'+(t?"on":"")+'"><span>'+k[1]+'</span><b>'+(t?hm(t):"")+'</b></li>'}).join("")+'</ol>';
+}
 function card(c){
-  var el=active(c)?Math.max(0,Math.round((Date.now()-c.times.reported)/60000)):null,g=active(c)?guide(caseLL(c)):"";
-  var h='<article class="case'+(active(c)?"":" done")+'"><div class="code t'+(c.triage||3)+'">'+esc(caseCode(c))+'</div>'+
-   '<div class="body"><div class="where">'+esc(zname(c.zone))+(c.landmark?"・"+esc(c.landmark):"")+'</div>'+
-   '<div class="meta">'+esc(c.complaint||"未填主訴")+" "+esc(who(c))+(g?"・"+esc(g):"")+'</div></div>'+
-   '<div class="body meta">'+esc(c.no)+"・"+STAT[c.status]+(c.crew?"・"+esc(c.crew):"")+(el!==null?"・已 "+el+" 分":"")+'</div>'+(unsynced(c.id)?'<div class="body" style="grid-column:1/-1"><span class="pill warn">尚未同步，請用無線電補報</span></div>':'')+'<div class="row">';
+  var on=active(c),el=on?Math.max(0,Math.round((Date.now()-c.times.reported)/60000)):null,g=on?guide(caseLL(c)):"";
+  var tags=['<span>'+esc(c.no)+'</span>','<span>'+STAT[c.status]+(c.disposition?"・"+esc(c.disposition):"")+'</span>'];
+  if(c.crew)tags.push('<span>出勤 '+esc(c.crew)+'</span>');
+  if(el!==null)tags.push('<span>已 '+el+' 分</span>');
+  if(g)tags.push('<span class="dist">'+esc(g)+'</span>');
+  var h='<article class="case '+(on?"tri"+(c.triage||3):"done")+'"><div class="plate '+(on?"t"+(c.triage||3):"off")+'">'+esc(caseCode(c))+'</div>'+
+   '<div class="body"><div class="where">'+esc(zname(c.zone))+(c.landmark?"　"+esc(c.landmark):"")+'</div>'+
+   '<div class="what"><b>'+esc(c.complaint||"未填主訴")+'</b>　'+esc(who(c))+'</div></div>'+
+   '<div class="wide">'+stepper(c)+'</div><div class="wide tags">'+tags.join("")+'</div>'+
+   (unsynced(c.id)?'<div class="wide"><span class="pill warn">尚未同步，請用無線電補報</span></div>':'')+'<div class="row">';
   (NEXT[c.status]||[]).forEach(function(n){h+='<button type="button" class="btn go" data-step="'+n[0]+'" data-id="'+esc(c.id)+'">'+n[1]+'</button>'});
   return h+'<button type="button" class="btn" data-open="'+esc(c.id)+'">詳細</button></div></article>';
 }
 function renderList(){
   var all=cur(),a=all.filter(active).sort(function(x,y){return(x.triage-y.triage)||(x.times.reported-y.times.reported)});
   var d=all.filter(function(c){return!active(c)}).sort(function(x,y){return y.times.reported-x.times.reported});
-  $("nAct").textContent=a.length?"("+a.length+")":"";
+  $("nAct").textContent=a.length?String(a.length):"";
   $("list").innerHTML=all.length?a.map(card).join("")+(d.length?'<h2 class="muted">已結束 '+d.length+' 件</h2>':"")+d.map(card).join("")
-   :'<div class="empty">目前沒有案件。<br>到「地圖」按「＋ 我的位置建案」，或直接點地圖上患者所在的位置。</div>';
+   :'<div class="empty"><b>目前沒有案件</b>到「地圖」按「在我的位置建案」，或直接點地圖上患者所在的位置。</div>';
 }
 function renderStats(){
   var all=cur().filter(function(c){return c.status!=="cancel"});
   var rt=all.map(function(c){return mins(c.times.reported,c.times.arrived)}).filter(function(v){return v!==null});
   var avg=rt.length?(rt.reduce(function(a,b){return a+b},0)/rt.length).toFixed(1):"—";
   function n(f){return all.filter(f).length}
-  $("stats").innerHTML='<div><b>'+all.length+'</b>總案件</div><div><b>'+n(function(c){return c.triage===1})+'</b>紅</div><div><b>'+n(function(c){return c.triage===2})+'</b>黃</div><div><b>'+n(function(c){return c.triage===3})+'</b>綠</div><div><b>'+n(function(c){return!!c.times.transport})+'</b>後送</div><div><b>'+avg+'</b>平均到達（分）</div>';
+  $("stats").innerHTML='<div><b>'+all.length+'</b>總案件</div><div class="r"><b>'+n(function(c){return c.triage===1})+'</b>紅 危急</div><div class="y"><b>'+n(function(c){return c.triage===2})+'</b>黃 緊急</div><div class="g"><b>'+n(function(c){return c.triage===3})+'</b>綠 輕症</div><div><b>'+n(function(c){return!!c.times.transport})+'</b>後送</div><div><b>'+avg+'</b>平均到達（分）</div>';
   var z={};all.forEach(function(c){z[c.zone]=(z[c.zone]||0)+1});
   var ks=Object.keys(z).sort(function(a,b){return z[b]-z[a]});
   $("byzone").textContent=ks.length?"各區件數："+ks.map(function(k){return k+" "+z[k]}).join("、"):"";
@@ -366,7 +374,7 @@ function show(t){tab=t;["map","list","stat"].forEach(function(k){$("v-"+k).hidde
   if(t==="stat")renderSettings();if(t==="map"&&map)setTimeout(function(){map.invalidateSize()},30)}
 
 /* ---------- 表單 ---------- */
-function chips(name,opts,val){return'<div class="chips">'+opts.map(function(o){var v=o.v!==undefined?o.v:o,l=o.l||o;
+function chips(name,opts,val){return'<div class="chips'+(name==="triage"?" seg":"")+'">'+opts.map(function(o){var v=o.v!==undefined?o.v:o,l=o.l||o;
   return'<button type="button" class="chip '+(o.c||"")+'" data-f="'+name+'" data-v="'+esc(v)+'" aria-pressed="'+(String(val)===String(v))+'">'+esc(l)+'</button>'}).join("")+'</div>'}
 function zoneSel(z){return'<select id="f-zone" aria-label="區碼">'+CODES.map(function(k){return'<option value="'+k+'"'+(k===z?" selected":"")+'>'+k+" "+esc(zname(k))+'</option>'}).join("")+'</select>'}
 function keypad(n){var h='<div class="kp">';[7,8,9,4,5,6,1,2,3].forEach(function(i){h+='<button type="button" class="chip" data-sub="'+i+'" aria-pressed="'+(i===n)+'">'+i+'</button>'});
@@ -377,7 +385,7 @@ function openCode(){
   openSheet('<div class="top"><div><div class="big" id="c-big">—</div><div class="muted">輸入無線電報的位置碼</div></div><button type="button" class="btn" data-close>取消</button></div>'+
    '<fieldset><legend>區（排列跟地圖一樣：上面是後殿）</legend><div class="zg">'+CODES.slice(0,18).map(function(k){return'<button type="button" class="chip" data-cz="'+k+'" aria-pressed="false">'+k+'</button>'}).join("")+'</div></fieldset>'+
    '<fieldset><legend>格內位置</legend>'+keypad(5)+'</fieldset>'+
-   '<button type="button" class="btn go" id="codeGo">顯示在地圖上</button>');
+   '<div class="sticky"><button type="button" class="btn go" id="codeGo">顯示在地圖上</button></div>');
 }
 function openSheet(h){$("sheetIn").innerHTML=h;$("sheet").hidden=false;$("sheet").scrollTop=0}
 function openNew(ll,acc){
@@ -391,7 +399,7 @@ function openNew(ll,acc){
    '<fieldset><legend>地標（讓出勤的人找得到）</legend>'+chips("landmark",MARKS,"")+'<input type="text" id="f-landmark" maxlength="40" placeholder="手動輸入" aria-label="手動輸入地標"></fieldset>'+
    '<fieldset><legend>患者</legend>'+chips("sex",["男","女","其他"],"")+chips("age",["兒童","青少年","成人","長者","其他"],"")+'</fieldset>'+
    '<fieldset><label class="l" for="f-note">備註</label><textarea id="f-note" rows="2" maxlength="300"></textarea></fieldset>'+
-   '<button type="button" class="btn go" id="f-save">建立案件</button>');
+   '<div class="sticky"><button type="button" class="btn go" id="f-save">建立案件</button></div>');
 }
 function openDetail(id){
   var c=cases[id];if(!c)return;var cc=caseCode(c);form={mode:"detail",id:id,triage:c.triage,sub:parseInt(cc.split("-")[1],10)||5};
@@ -404,7 +412,7 @@ function openDetail(id){
   if(active(c))h+='<button type="button" class="btn" data-nav="'+esc(id)+'">'+(navId===id?"導引中":"導引到這裡")+'</button><button type="button" class="btn" data-move="'+esc(id)+'">在地圖上改位置</button>';
   h+='<button type="button" class="btn" data-show="'+esc(id)+'">在地圖上看</button>'+
    (ll?'<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query='+ll[0].toFixed(6)+','+ll[1].toFixed(6)+'">在 Google 地圖開啟</a>':'')+'</div>'+
-   '<div class="times">'+TKEY.map(function(k){return'<div>'+k[1]+'<b>'+hm(c.times[k[0]])+'</b></div>'}).join("")+'</div>'+
+   stepper(c)+
    '<p class="muted">出勤人員：'+esc(c.crew||"尚未指派")+'　建立：'+esc(c.createdBy||"")+'</p>'+
    '<fieldset><legend>檢傷</legend>'+chips("triage",TRI,c.triage)+'</fieldset>'+
    '<fieldset><legend>位置碼（改了之後標記會移到該小格中央）</legend>'+zoneSel(c.zone)+keypad(form.sub)+'</fieldset>'+
