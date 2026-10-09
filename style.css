@@ -110,3 +110,9 @@ nav button[aria-current="true"]{color:var(--accent);border-top-color:var(--accen
 .alert #alertOpen span{font-size:.85rem}
 .alert #alertNo{border:0;background:none;color:inherit;padding:0 18px;font-size:1.2rem;min-width:52px}
 @media (prefers-reduced-motion: reduce){.arrow{transition:none}}
+
+.admin{border:2px solid var(--red);border-radius:8px;padding:0 12px}
+.admin summary{padding:12px 0;font-weight:700;color:var(--red);cursor:pointer}
+.admin[open]{padding-bottom:12px}
+.pev{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.pev b{font-variant-numeric:tabular-nums}

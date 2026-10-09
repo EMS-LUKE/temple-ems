@@ -47,7 +47,6 @@
         <button class="btn" id="dl" type="button">下載 CSV</button>
       </div>
       <textarea id="csv" rows="5" readonly hidden aria-label="案件資料"></textarea>
-
       <h2>離線底圖</h2>
       <p class="muted" id="tileInfo">尚未下載。</p>
       <button class="btn go" id="getTiles" type="button">下載廟區離線底圖</button>
@@ -55,10 +54,6 @@
 
       <h2>分區</h2>
       <p class="muted" id="cellInfo"></p>
-      <button class="btn" id="calib" type="button">校正分區（在地圖上點三個角）</button>
-      <button class="btn danger" id="resetGrid" type="button">還原成預設分區位置</button>
-      <div class="zedit" id="zedit"></div>
-      <button class="btn" id="saveZ" type="button">儲存區名</button>
 
       <h2>同步</h2>
       <label class="l" for="teamInput">勤務代碼（全隊輸入同一組，6 碼以上英數字）</label>
@@ -66,9 +61,23 @@
       <button class="btn" id="saveTeam" type="button">儲存勤務代碼</button>
       <p class="muted" id="teamInfo"></p>
 
-      <h2>活動</h2>
+      <h2>過去活動</h2>
+      <div id="pastEv" class="col"></div>
+
+      <details class="admin">
+        <summary>管理員功能（一般隊員請勿操作）</summary>
+        <div class="col">
+          <p class="warnbox">以下操作會影響全隊所有手機，僅限管理員使用。</p>
+          <button class="btn danger" id="newEv" type="button">開始新活動（僅限管理員，非管理員請勿按）</button>
+          <p class="muted">目前的案件會移到「過去活動」，全隊畫面歸零。可以從「過去活動」切回來。</p>
+          <button class="btn danger" id="purgeCancel" type="button">刪除所有已取消的案件</button>
+          <button class="btn" id="calib" type="button">校正分區（在地圖上點三個角）</button>
+          <button class="btn danger" id="resetGrid" type="button">還原成預設分區位置</button>
+          <div class="zedit" id="zedit"></div>
+          <button class="btn" id="saveZ" type="button">儲存區名</button>
+        </div>
+      </details>
       <p class="muted">活動名稱固定為「鹿耳門聖母廟煙火勤務」。</p>
-      <button class="btn danger" id="newEv" type="button">開始新活動（舊案件不再顯示）</button>
       <p class="muted">底圖來源：內政部國土測繪中心。</p>
     </div>
   </section>

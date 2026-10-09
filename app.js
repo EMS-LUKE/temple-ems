@@ -39,8 +39,11 @@ function zname(c){return(site.zones&&site.zones[c])||DEF[c]||c}
 function persist(){ls("ems.cases",cases);ls("ems.dirty",dirty)}
 function hm(t){if(!t)return"—";var d=new Date(t);return("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)}
 function mins(a,b){return(a&&b)?Math.round((b-a)/60000):null}
-function cur(){return Object.keys(cases).map(function(k){return cases[k]}).filter(function(c){return c.eventId===site.eventId})}
-function active(c){return c.status!=="closed"&&c.status!=="cancel"}
+function casesOf(eid){return Object.keys(cases).map(function(k){return cases[k]}).filter(function(c){return c.eventId===eid&&!c.deleted})}
+function cur(){return casesOf(site.eventId)}
+function md(t){var d=new Date(t);return(d.getMonth()+1)+"/"+d.getDate()+" "+hm(t)}
+function active(c){return !c.deleted&&c.status!=="closed"&&c.status!=="cancel"}
+function tomb(c){return{id:c.id,eventId:c.eventId,no:c.no,deleted:true}}
 function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2800)}
 function unsynced(id){return !!(CFG.firebase&&team&&dirty[id])}
 function ago(t){if(!t)return"尚未同步過";var m=Math.floor((Date.now()-t)/60000);return m<1?"剛剛同步":m<60?"上次同步 "+m+" 分前":"上次同步 "+hm(t)}
@@ -135,6 +138,7 @@ function applyRemote(r){
   if(l&&dirty[r.id]&&(l.updatedAt||0)>=(r.updatedAt||0))return;
   if(l&&(r.updatedAt||0)<=(l.updatedAt||0))return;
   cases[r.id]=clone(r);delete dirty[r.id];
+  if(r.deleted&&form&&form.id===r.id){form=null;$("sheet").hidden=true}
   if(r.eventId!==site.eventId||!active(r))return;
   if(!l){if(!firstSnap||Date.now()-(r.times&&r.times.reported||0)<3*60000)alertCase("new",r)}
   else if(l.zone!==r.zone||(l.lat&&r.lat&&Math.hypot.apply(null,toXY([r.lat,r.lng],[l.lat,l.lng]))>10))alertCase("move",r);
@@ -341,6 +345,11 @@ function renderSettings(){
   var ae=document.activeElement;if(ae&&$("v-stat").contains(ae)&&ae.tagName==="INPUT")return;
   $("zedit").innerHTML=CODES.map(function(c){return'<code>'+c+'</code><input type="text" id="z-'+c+'" maxlength="20" aria-label="'+c+' 區名" value="'+esc(zname(c))+'">'}).join("");
   var cs=cellSize();$("cellInfo").textContent="目前每格約 "+cs.w+" × "+cs.d+" 公尺（約 "+cs.area.toLocaleString()+" 平方公尺），走過一格的寬度約 "+Math.round(cs.w/1.3/5)*5+" 秒。"+((cs.w>150||cs.d>150||cs.w<10||cs.d<10)?"尺寸不合理，校正可能點錯了。":"");
+  var ev={};Object.keys(cases).forEach(function(k){var c=cases[k];if(c.deleted||c.eventId===site.eventId||!c.times)return;(ev[c.eventId]=ev[c.eventId]||[]).push(c.times.reported)});
+  var ek=Object.keys(ev).sort(function(a,b){return Math.max.apply(null,ev[b])-Math.max.apply(null,ev[a])});
+  $("pastEv").innerHTML=ek.length?ek.map(function(k){var t=ev[k];
+    return'<div class="pev"><div><b>'+esc(md(Math.min.apply(null,t)))+' ～ '+esc(md(Math.max.apply(null,t)))+'</b>　'+t.length+' 件</div><div class="rowb"><button type="button" class="btn" data-evdl="'+esc(k)+'">下載 CSV</button><button type="button" class="btn" data-evback="'+esc(k)+'">切回這場活動</button></div></div>'}).join("")
+    :'<p class="muted">沒有過去的活動。按過「開始新活動」之後，先前的案件會列在這裡，可以下載或切回去。</p>';
   $("teamInput").value=team;
   $("teamInfo").textContent=!CFG.firebase?"尚未設定 Firebase（見 README），目前是單機模式，輸入代碼也不會同步。":(team?"目前代碼："+team:"尚未輸入，資料只存在這支手機。");
   tileCount();
@@ -403,9 +412,21 @@ function openDetail(id){
   if(c.status==="onscene")h+='<button type="button" class="btn" data-refuse="'+esc(id)+'">拒絕送醫結案</button>';
   if(active(c))h+='<button type="button" class="btn danger" data-cancel="'+esc(id)+'">取消案件（誤報）</button>';
   else h+='<button type="button" class="btn" data-reopen="'+esc(id)+'">重新開啟</button>';
+  h+='<button type="button" class="btn danger" data-del="'+esc(id)+'">刪除案件（無法復原）</button>';
   openSheet(h);
 }
 function closeSheet(){$("sheet").hidden=true;form=null;render()}
+function askCode(title,then){
+  var code=String(Math.floor(1000+Math.random()*9000));form={mode:"confirm",code:code,then:then};
+  openSheet('<div class="top"><h2>'+esc(title)+'</h2><button type="button" class="btn" data-close>取消</button></div>'+
+   '<p class="warnbox">這個操作會影響全隊所有手機。確定要執行，請輸入下面的數字。</p><div class="big">'+code+'</div>'+
+   '<input type="text" id="f-code" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="確認數字" placeholder="輸入上面 4 個數字"><button type="button" class="btn danger" id="f-code-ok">確認執行</button>');
+}
+function dlCsv(eid,name){
+  var ex2=exportText(",",eid),a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["\ufeff"+ex2.text],{type:"text/csv"}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+}
 function askMe(then){
   form={mode:"me",then:then};
   openSheet('<div class="top"><h2>你的呼號</h2><button type="button" class="btn" data-close>取消</button></div>'+
@@ -423,9 +444,9 @@ function step(id,to){
   if(to==="closed"){c.times.closed=now;c.disposition=c.times.transport?"後送":"現場處置"}
   c.status=to;$("sheet").hidden=true;form=null;save(c);toast(caseCode(c)+" "+STAT[to]+" "+hm(now));
 }
-function exportText(sep){
+function exportText(sep,eid){
   var head=["案號","區碼","位置碼","區名","地標","主訴","檢傷","性別","年齡層","狀態","處置","出勤人員","通報","出勤","到達","後送","結案","到達分鐘","緯度","經度","備註","建立者"];
-  var rows=cur().sort(function(a,b){return a.times.reported-b.times.reported}).map(function(c){
+  var rows=casesOf(eid||site.eventId).sort(function(a,b){return a.times.reported-b.times.reported}).map(function(c){
     return[c.no,c.zone,caseCode(c),zname(c.zone),c.landmark,c.complaint,["","紅","黃","綠"][c.triage]||"",c.sex,c.age,STAT[c.status],c.disposition,c.crew,
       hm(c.times.reported),hm(c.times.dispatched),hm(c.times.arrived),hm(c.times.transport),hm(c.times.closed),
       mins(c.times.reported,c.times.arrived),c.lat?c.lat.toFixed(6):"",c.lng?c.lng.toFixed(6):"",c.note,c.createdBy].map(function(v){
@@ -544,6 +565,24 @@ document.addEventListener("click",function(e){
     if(d.reopen){c3.status=c3.times.arrived?"onscene":(c3.times.dispatched?"enroute":"new");delete c3.times.closed;delete c3.times.transport;c3.disposition=""}
     form=null;$("sheet").hidden=true;save(c3);return;
   }
+  if(d.del){
+    if(d.sure!=="1"){d.sure="1";t.textContent="再按一次確定刪除，全隊都會消失";return}
+    var dc=cases[d.del];form=null;$("sheet").hidden=true;if(dc){save(tomb(dc));toast("已刪除 "+dc.no)}return;
+  }
+  if(id==="purgeCancel"){
+    var pc=cur().filter(function(c){return c.status==="cancel"});
+    if(!pc.length)return toast("沒有已取消的案件");
+    if(d.sure!=="1"){d.sure="1";t.textContent="再按一次確定刪除 "+pc.length+" 筆";setTimeout(function(){d.sure="";t.textContent="刪除所有已取消的案件"},5000);return}
+    d.sure="";t.textContent="刪除所有已取消的案件";
+    var nowp=Date.now();pc.forEach(function(c){var x=tomb(c);x.updatedAt=nowp;x.by=me||"未設定";cases[c.id]=x;dirty[c.id]=1});persist();render();flush();toast("已刪除 "+pc.length+" 筆");return;
+  }
+  if(id==="f-code-ok"){
+    if($("f-code").value.trim()!==form.code)return toast("數字不對，沒有執行");
+    var cf=form.then;form=null;$("sheet").hidden=true;cf();return;
+  }
+  if(d.evdl){var et=casesOf(d.evdl).map(function(c){return c.times.reported}),e0=new Date(Math.min.apply(null,et));
+    dlCsv(d.evdl,"救護案件-"+e0.getFullYear()+("0"+(e0.getMonth()+1)).slice(-2)+("0"+e0.getDate()).slice(-2)+"-過去活動.csv");return}
+  if(d.evback){var eb=d.evback;return askCode("切回這場活動",function(){site.eventId=eb;saveSite("已切回該場活動");renderSettings();show("list")})}
   if(id==="copy"){
     var ex=exportText("\t"),ta=$("csv");
     var fb=function(){ta.hidden=false;ta.value=ex.text;ta.focus();ta.select();toast("請手動複製下方文字")};
@@ -551,10 +590,7 @@ document.addEventListener("click",function(e){
     return;
   }
   if(id==="dl"){
-    var ex2=exportText(","),a=document.createElement("a"),dt=new Date();
-    a.href=URL.createObjectURL(new Blob(["﻿"+ex2.text],{type:"text/csv"}));
-    a.download="救護案件-"+dt.getFullYear()+("0"+(dt.getMonth()+1)).slice(-2)+("0"+dt.getDate()).slice(-2)+".csv";
-    document.body.appendChild(a);a.click();a.remove();return;
+    var dt=new Date();dlCsv(null,"救護案件-"+dt.getFullYear()+("0"+(dt.getMonth()+1)).slice(-2)+("0"+dt.getDate()).slice(-2)+".csv");return;
   }
   if(id==="getTiles")return getTiles(t);
   if(id==="saveZ"){var z={};CODES.forEach(function(c){var v=$("z-"+c).value.trim();if(v&&v!==DEF[c])z[c]=v});site.zones=z;saveSite("區名已儲存");return}
@@ -564,9 +600,7 @@ document.addEventListener("click",function(e){
     ls("ems.team",tv);location.reload();return;
   }
   if(id==="newEv"){
-    if(d.sure!=="1"){d.sure="1";t.textContent="再按一次確定：開始新活動";setTimeout(function(){d.sure="";t.textContent="開始新活動（舊案件不再顯示）"},5000);return}
-    d.sure="";t.textContent="開始新活動（舊案件不再顯示）";
-    site.eventId="e"+Date.now().toString(36);site.eventName=EVENT_NAME;saveSite("已開始新活動");return;
+    return askCode("開始新活動",function(){site.eventId="e"+Date.now().toString(36);site.eventName=EVENT_NAME;saveSite("已開始新活動，舊案件在「過去活動」");renderSettings()});
   }
 });
 $("sheet").addEventListener("change",function(e){if(e.target.id==="f-zone"&&$("f-big"))$("f-big").textContent=bigCode()});
