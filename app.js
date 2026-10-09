@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v29";
+var APP_VERSION="v30";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -334,7 +334,7 @@ function card(c){
    '<div class="wide">'+stepper(c)+'</div><div class="wide tags">'+tags.join("")+'</div>'+
    (unsynced(c.id)?'<div class="wide"><span class="pill warn">尚未同步，請用無線電補報</span></div>':'')+'<div class="row">';
   (NEXT[c.status]||[]).forEach(function(n){h+='<button type="button" class="btn go" data-step="'+n[0]+'" data-id="'+esc(c.id)+'">'+n[1]+'</button>'});
-  if(c.status==="onscene"||c.status==="transport")h+='<button type="button" class="btn" data-txopen="'+esc(c.id)+'">處置紀錄</button>';
+  if(c.status==="onscene"||c.status==="transport")h+=c.tx?'<button type="button" class="btn" data-txopen="'+esc(c.id)+'">修改處置紀錄</button>':'<button type="button" class="btn txhot" data-txopen="'+esc(c.id)+'">'+TX_ICON+'填寫處置紀錄</button>';
   return h+'<button type="button" class="btn" data-open="'+esc(c.id)+'">詳細</button></div></article>';
 }
 function renderList(){
@@ -416,10 +416,9 @@ function openDetail(id){
   if(active(c))h+='<button type="button" class="btn" data-nav="'+esc(id)+'">'+(navId===id?"導引中":"導引到這裡")+'</button><button type="button" class="btn" data-move="'+esc(id)+'">在地圖上改位置</button>';
   h+='<button type="button" class="btn" data-show="'+esc(id)+'">在地圖上看</button>'+
    (ll?'<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query='+ll[0].toFixed(6)+','+ll[1].toFixed(6)+'">在 Google 地圖開啟</a>':'')+'</div>'+
-   stepper(c)+
+   txBlock(c,id)+stepper(c)+
    '<p class="muted">出勤人員：'+esc(c.crew||"尚未指派")+'　建立：'+esc(c.createdBy||"")+'</p>'+
-   '<fieldset><legend>處置紀錄'+(c.txAt?"（"+esc(c.txBy||"")+" "+hm(c.txAt)+" 更新）":"")+'</legend>'+(txLines(c).length?'<div class="txsum">'+txLines(c).map(function(l){return'<div>'+esc(l)+'</div>'}).join("")+'</div>':'<p class="muted">尚未填寫。</p>')+
-   '<button type="button" class="btn" data-txopen="'+esc(id)+'">'+(c.tx?"修改處置紀錄":"填寫處置紀錄")+'</button></fieldset>'+
+
    '<fieldset><legend>檢傷</legend>'+chips("triage",TRI,c.triage)+'</fieldset>'+
    '<fieldset><legend>位置碼（改了之後標記會移到該小格中央）</legend>'+zoneSel(c.zone)+keypad(form.sub)+'</fieldset>'+
    '<fieldset><label class="l" for="f-landmark">地標</label><input type="text" id="f-landmark" maxlength="40" value="'+esc(c.landmark)+'"></fieldset>'+
@@ -571,6 +570,12 @@ function oneChips(key,opts,val){
 function num(id,label,val,unit,w){return'<label class="fld"><span>'+label+'</span><input type="text" inputmode="decimal" id="'+id+'" maxlength="6" value="'+esc(val||"")+'"'+(w?' style="width:'+w+'px"':'')+'>'+(unit?'<span>'+unit+'</span>':'')+'</label>'}
 function sel(id,label,n,val){var h='<label class="fld"><span>'+label+'</span><select id="'+id+'"><option value="">–</option>';for(var i=n;i>=1;i--)h+='<option'+(String(val)===String(i)?" selected":"")+'>'+i+'</option>';return h+'</select></label>'}
 function sub(label){return'<div class="sub">'+label+'</div>'}
+var TX_ICON='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M12 10v6M9 13h6"/></svg>';
+function txBlock(c,id){
+  var lines=txLines(c),hot=c.status==="onscene"||c.status==="transport";
+  if(!lines.length)return'<button type="button" class="txcta'+(hot?" hot":"")+'" data-txopen="'+esc(id)+'">'+TX_ICON+'<span><b>填寫處置紀錄</b><small>'+(hot?"已到達現場，尚未填寫":"主訴、傷情、X A B C D E、生命徵象")+'</small></span></button>';
+  return'<section class="txcard"><div class="txhd"><span><b>處置紀錄</b><small>'+esc(c.txBy||"")+(c.txAt?" "+hm(c.txAt)+" 更新":"")+'</small></span><button type="button" class="btn go" data-txopen="'+esc(id)+'">修改</button></div><div class="txsum">'+lines.map(function(l){return'<div>'+esc(l)+'</div>'}).join("")+'</div></section>';
+}
 function openTx(id){
   var c=cases[id];if(!c)return;var t=txNorm(c);form={mode:"tx",id:id,tx:t};
   var h='<div class="top"><div><div class="big">'+esc(caseCode(c))+'</div><div class="muted">處置紀錄　'+esc(c.no)+(c.complaint?"　通報主訴："+esc(c.complaint):"")+'</div></div><button type="button" class="btn" data-close>取消</button></div>';

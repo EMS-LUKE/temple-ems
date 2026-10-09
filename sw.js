@@ -1,5 +1,5 @@
 // 更新任何檔案後，一定要把版本號加一，手機才會抓到新版（會整包一起換，不會新舊混用）。
-var VERSION = "v29";
+var VERSION = "v30";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
