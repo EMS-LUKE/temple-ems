@@ -88,7 +88,7 @@
 
 建議管理員另外做的兩件事（在 Google 後台，各做一次）：
 1. **更新 Firestore 規則**：把 `firestore.rules` 的新內容貼到 Firebase 的「規則」分頁並發布。新規則只開放系統用到的路徑。發布後用兩支手機確認右上角仍顯示「已同步」。
-2. **限制 API 金鑰只能從你的網址使用**：到 <https://console.cloud.google.com/apis/credentials>，選這個專案 → 點 Browser key → 「應用程式限制」選「網站」→ 加入 `https://ems-luke.github.io/*` → 儲存。這樣別的網站拿到金鑰也不能用。
+2. **限制 API 金鑰只能從你的網址使用**：到 <https://console.cloud.google.com/apis/credentials>，選這個專案 → 點 Browser key → 「應用程式限制」選「網站」→ 加入 `https://ems-luke.github.io/*` → 儲存（要填到網域這一層，不要加上 repository 路徑，否則會被擋）。這樣別的網站拿到金鑰也不能用。
 
 使用上的原則：
 - 每場活動換一組勤務代碼，只在勤前給當班隊員。

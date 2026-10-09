@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v31";
+var APP_VERSION="v33";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -119,23 +119,33 @@ function connect(){
     fs.enablePersistence({synchronizeTabs:true}).catch(function(){});
     root=fs.collection("teams").doc(team);
   }catch(e){syncErr="error";return syncPill()}
-  root.collection("cases").onSnapshot({includeMetadataChanges:true},function(snap){
-    live=!snap.metadata.fromCache;
+  listen();flush();
+}
+// 監聽被拒或中斷時不會自己恢復，所以每 20 秒重連一次，後台設定修好後不用重開系統
+var unsubs=[],relisten=0;
+function listenFail(e){
+  live=false;syncErr=(e&&e.code)||"error";syncPill();
+  clearTimeout(relisten);relisten=setTimeout(listen,20000);
+}
+function listen(){
+  unsubs.forEach(function(u){try{u()}catch(e){}});unsubs=[];
+  unsubs.push(root.collection("cases").onSnapshot({includeMetadataChanges:true},function(snap){
+    live=!snap.metadata.fromCache;if(live)syncErr="";
     if(live){lastSync=Date.now();ls("ems.lastSync",lastSync)}
     snap.forEach(function(doc){applyRemote(doc.data())});
     if(live)snap.docChanges().forEach(function(ch){if(ch.type==="removed"&&!dirty[ch.doc.id])delete cases[ch.doc.id]});
     if(live)firstSnap=false;
     persist();render();
-  },function(e){live=false;syncErr=(e&&e.code)||"error";syncPill()});
-  root.collection("meta").doc("site").onSnapshot(function(s){
+  },listenFail));
+  unsubs.push(root.collection("meta").doc("site").onSnapshot(function(s){
     if(!s.exists)return;var r=s.data();
     if((r.updatedAt||0)<=(site.updatedAt||0))return;
     site={eventId:r.eventId||"e0",eventName:r.eventName||"",zones:r.zones||{},grid:r.grid||null,updatedAt:r.updatedAt||0};
     ls("ems.site",site);drawGrid();render();renderSettings();gpsBox();
-  },function(){});
-  root.collection("crew").onSnapshot(function(snap){
+  },function(){}));
+  unsubs.push(root.collection("crew").onSnapshot(function(snap){
     crew={};snap.forEach(function(d){if(d.id!==dev)crew[d.id]=d.data()});drawCrew();
-  },function(){});
+  },function(){}));
   flush();
 }
 function applyRemote(r){
