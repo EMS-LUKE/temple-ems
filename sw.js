@@ -1,14 +1,14 @@
 // 更新任何檔案後，請把版本號加一，手機才會抓到新版。
-var VERSION = "v1";
+var VERSION = "v2";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
   "./", "index.html", "style.css", "app.js", "config.js", "manifest.webmanifest",
-  "vendor/leaflet.js", "vendor/leaflet.css",
-  "vendor/images/layers.png", "vendor/images/layers-2x.png",
-  "vendor/images/marker-icon.png", "vendor/images/marker-icon-2x.png", "vendor/images/marker-shadow.png",
-  "vendor/firebase-app-compat.js", "vendor/firebase-firestore-compat.js",
-  "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"
+  "leaflet.js", "leaflet.css",
+  "layers.png", "layers-2x.png",
+  "marker-icon.png", "marker-icon-2x.png", "marker-shadow.png",
+  "firebase-app-compat.js", "firebase-firestore-compat.js",
+  "icon-180.png", "icon-192.png", "icon-512.png"
 ];
 
 self.addEventListener("install", function (e) {

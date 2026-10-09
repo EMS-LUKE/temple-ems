@@ -5,7 +5,7 @@
 ## 一、放上 GitHub Pages
 
 1. 在 GitHub 建一個新的 repository（例如 `temple-ems`），設為 Public。
-2. 把這個資料夾裡的**所有檔案**上傳（保持資料夾結構）。
+2. 把這個資料夾裡的**所有檔案**上傳。所有檔案都在同一層，沒有子資料夾。
 3. Settings → Pages → Source 選 `Deploy from a branch`，Branch 選 `main`、資料夾選 `/ (root)`。
 4. 幾分鐘後網址是 `https://ems-luke.github.io/temple-ems/`。
 
@@ -18,7 +18,7 @@
 3. Firestore 的「規則」分頁，把內容換成 `firestore.rules` 檔案裡的內容，按發布。
 4. 專案設定（齒輪）→ 一般 → 你的應用程式 → 新增「網頁」應用程式，會得到一段 `firebaseConfig = { ... }`。
 5. 打開 `config.js`，把 `firebase: null` 改成 `firebase: { apiKey: "...", ... }`（整段大括號貼進去）。
-6. 打開 `sw.js`，把 `VERSION = "v1"` 改成 `"v2"`，兩個檔案一起上傳到 GitHub。
+6. 打開 `sw.js`，把 `VERSION` 的數字加一，兩個檔案一起上傳到 GitHub。
 7. 每支手機到「統計・設定 → 同步」輸入**同一組勤務代碼**（6 碼以上英數字）。
 
 勤務代碼等於密碼：知道代碼的人都能讀寫這一組案件。請用不好猜的代碼，每次活動可以換一組。
