@@ -1,6 +1,6 @@
 {
-  "name": "鹿耳門聖母廟煙火勤務",
-  "short_name": "聖母廟煙火勤務",
+  "name": "鹿耳門聖母廟煙火勤務系統",
+  "short_name": "煙火勤務系統",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

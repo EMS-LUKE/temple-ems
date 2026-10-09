@@ -22,7 +22,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務";
+var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
 var cases=ls("ems.cases")||{}, dirty=ls("ems.dirty")||{}, me=ls("ems.me")||"", team=ls("ems.team")||"";
