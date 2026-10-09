@@ -246,3 +246,15 @@ button,.chip,.btn,summary{touch-action:manipulation}
 .txcard .txsum{box-shadow:none;border-radius:0;border-top:1px solid var(--line)}
 .case .row .txhot{flex:1 1 100%;order:-1;min-height:52px;background:var(--p2);color:var(--p2-ink);border-color:transparent;font-weight:700;font-size:1.05rem;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .case .row .txhot svg{width:24px;height:24px}
+/* 說明與勤前檢查 */
+.chk{display:flex;align-items:flex-start;gap:10px;padding:6px 0}
+.chk i{flex:none;width:14px;height:14px;border-radius:50%;margin-top:5px;background:var(--p2)}
+.chk.ok i{background:var(--p3)}
+.chk span{display:flex;flex-direction:column;min-width:0}
+.chk small{color:var(--muted);font-size:.85rem}
+.help{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow)}
+.help summary{padding:14px;font-weight:700;font-size:1.05rem;cursor:pointer;min-height:50px}
+.help ol{margin:0;padding:0 16px 14px 38px;display:flex;flex-direction:column;gap:8px;line-height:1.6}
+.kpdemo{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:.85rem}
+.kpdemo div{display:grid;grid-template-columns:repeat(3,44px);gap:4px}
+.kpdemo i{font-style:normal;font-family:var(--num);font-weight:700;font-size:1.3rem;background:var(--plate);color:#fff;border-radius:6px;height:38px;display:grid;place-items:center}

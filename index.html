@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://wmts.nlsc.gov.tw https://www.google.com; font-src 'self'; connect-src 'self' https: wss:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="theme-color" content="#10233b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="煙火勤務系統">
@@ -17,6 +19,7 @@
 <body>
 <header>
   <h1 id="evName">鹿耳門聖母廟煙火勤務系統</h1>
+  <button class="pill" id="helpBtn" type="button">說明</button>
   <button class="pill" id="who" type="button">設定呼號</button>
   <span class="pill" id="sync">單機模式</span>
 </header>
@@ -61,6 +64,13 @@
       <button class="btn" id="saveTeam" type="button">儲存勤務代碼</button>
       <p class="muted" id="teamInfo"></p>
 
+      <h2>隱私</h2>
+      <button class="btn" id="shareBtn" type="button">位置分享</button>
+      <p class="muted">開啟時，隊友的地圖上會顯示你的呼號和位置，大約每 30 秒更新一次。</p>
+      <button class="btn danger" id="wipeLocal" type="button">登出並清除這支手機上的資料</button>
+      <p class="muted">勤務結束後使用。會清掉這支手機上的案件和勤務代碼，雲端和其他人的手機不受影響。呼號和離線底圖會保留。</p>
+      <button class="btn" id="helpOpen" type="button">使用說明與勤前檢查</button>
+
       <h2>過去活動</h2>
       <div id="pastEv" class="col"></div>
 
@@ -71,6 +81,8 @@
           <button class="btn danger" id="newEv" type="button">開始新活動（僅限管理員，非管理員請勿按）</button>
           <p class="muted">目前的案件會移到「過去活動」，全隊畫面歸零。可以從「過去活動」切回來。</p>
           <button class="btn danger" id="purgeCancel" type="button">刪除所有已取消的案件</button>
+          <button class="btn danger" id="wipeCloud" type="button">永久刪除這組勤務代碼的全部案件（雲端與本機）</button>
+          <p class="muted">資料匯出並交付後使用。雲端上的案件會真的刪除，全隊手機上的也會跟著消失，無法復原。</p>
           <button class="btn" id="calib" type="button">校正分區（在地圖上點三個角）</button>
           <button class="btn danger" id="resetGrid" type="button">還原成預設分區位置</button>
           <div class="zedit" id="zedit"></div>

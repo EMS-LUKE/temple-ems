@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v30";
+var APP_VERSION="v31";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -123,6 +123,7 @@ function connect(){
     live=!snap.metadata.fromCache;
     if(live){lastSync=Date.now();ls("ems.lastSync",lastSync)}
     snap.forEach(function(doc){applyRemote(doc.data())});
+    if(live)snap.docChanges().forEach(function(ch){if(ch.type==="removed"&&!dirty[ch.doc.id])delete cases[ch.doc.id]});
     if(live)firstSnap=false;
     persist();render();
   },function(e){live=false;syncErr=(e&&e.code)||"error";syncPill()});
@@ -153,8 +154,9 @@ function saveSite(msg){
   root.collection("meta").doc("site").set(clone(site)).then(function(){toast(msg||"已儲存")},function(){toast("同步失敗，只存在這支手機")});
   toast((msg||"已儲存")+"，有訊號時會同步給全隊");
 }
+var share=ls("ems.share")!==false;
 function publishPos(){
-  if(!root||!me||!pos)return;
+  if(!root||!me||!pos||!share)return;
   var now=Date.now(),moved=lastPub.ll?Math.hypot.apply(null,toXY(pos.ll,lastPub.ll)):999;
   if(!((now-lastPub.t>30000&&moved>15)||now-lastPub.t>120000))return;
   lastPub={t:now,ll:pos.ll};
@@ -364,6 +366,7 @@ function renderSettings(){
     return'<div class="pev"><div><b>'+esc(md(Math.min.apply(null,t)))+' ～ '+esc(md(Math.max.apply(null,t)))+'</b>　'+t.length+' 件</div><div class="rowb"><button type="button" class="btn" data-evdl="'+esc(k)+'">下載 CSV</button><button type="button" class="btn" data-evback="'+esc(k)+'">切回這場活動</button></div></div>'}).join("")
     :'<p class="muted">沒有過去的活動。按過「開始新活動」之後，先前的案件會列在這裡，可以下載或切回去。</p>';
   $("verInfo").textContent="目前版本 "+APP_VERSION;
+  $("shareBtn").textContent="位置分享："+(share?"開啟中（點一下關閉）":"已關閉（點一下開啟）");
   $("teamInput").value=team;
   $("teamInfo").textContent=!CFG.firebase?"尚未設定 Firebase（見 README），目前是單機模式，輸入代碼也不會同步。":(team?"目前代碼："+team:"尚未輸入，資料只存在這支手機。");
   tileCount();
@@ -402,7 +405,7 @@ function openNew(ll,acc){
    '<fieldset><legend>主訴</legend>'+chips("complaint",COMPLAINTS,"")+'<input type="text" id="f-complaintx" maxlength="40" placeholder="手動輸入" aria-label="手動輸入主訴"></fieldset>'+
    '<fieldset><legend>地標（讓出勤的人找得到）</legend>'+chips("landmark",MARKS,"")+'<input type="text" id="f-landmark" maxlength="40" placeholder="手動輸入" aria-label="手動輸入地標"></fieldset>'+
    '<fieldset><legend>患者</legend>'+chips("sex",["男","女","其他"],"")+chips("age",["兒童","青少年","成人","長者","其他"],"")+chips("preg",["孕婦"],"")+'</fieldset>'+
-   '<fieldset><label class="l" for="f-note">備註</label><textarea id="f-note" rows="2" maxlength="300"></textarea></fieldset>'+
+   '<fieldset><label class="l" for="f-note">備註</label><textarea id="f-note" rows="2" maxlength="300" placeholder="不要輸入姓名、身分證字號、電話"></textarea></fieldset>'+
    '<div class="sticky"><button type="button" class="btn go" id="f-save">建立案件</button></div>');
 }
 function openDetail(id){
@@ -663,6 +666,53 @@ function txSave(){
   c.tx=t;c.txAt=Date.now();c.txBy=me||"未設定";
   form=null;$("sheet").hidden=true;save(c);toast("處置紀錄已儲存");
 }
+/* ---------- 隱私與資料清除 ---------- */
+var PII=/[A-Za-z][12]\d{8}|[A-Za-z]{2}\d{8}|09\d{2}[-\s]?\d{3}[-\s]?\d{3}|0\d{1,2}[-\s]\d{6,8}/;
+function hasPII(){return Array.prototype.some.call($("sheet").querySelectorAll("input[type=text],textarea"),function(e){return PII.test(e.value)})}
+function localWipe(cb){
+  cases={};dirty={};persist();alerts=[];ls("ems.site",null);ls("ems.nav",null);ls("ems.lastSync",0);
+  var done=function(){if(cb)cb()};
+  if(fs){try{fs.terminate().then(function(){return fs.clearPersistence()}).then(done,done)}catch(e){done()}}else done();
+}
+function wipeCloud(){
+  if(!root)return localWipe(function(){location.reload()});
+  toast("刪除中…");
+  function del(col){
+    return root.collection(col).get({source:"server"}).then(function(snap){
+      var refs=[],p=Promise.resolve();snap.forEach(function(d){refs.push(d.ref)});
+      for(var i=0;i<refs.length;i+=400)(function(part){p=p.then(function(){var b=fs.batch();part.forEach(function(r){b.delete(r)});return b.commit()})})(refs.slice(i,i+400));
+      return p;
+    });
+  }
+  del("cases").then(function(){return del("crew")}).then(function(){
+    cases={};dirty={};persist();alerts=[];navId=null;ls("ems.nav",null);render();renderSettings();toast("已永久刪除這組代碼的全部案件");
+  },function(){toast("刪除失敗，請確認網路後再試")});
+}
+
+/* ---------- 使用說明與勤前檢查 ---------- */
+function chk(ok,title,hint){return'<div class="chk '+(ok?"ok":"no")+'"><i></i><span><b>'+title+'</b><small>'+hint+'</small></span></div>'}
+function openHelp(){
+  form={mode:"help"};ls("ems.helped",1);
+  var sync=!CFG.firebase?chk(true,"單機模式","這套系統未設定多機同步，案件只存在這支手機。")
+    :chk(!!team&&live,team?(live?"已連上同步":"尚未連上同步"):"尚未輸入勤務代碼",team?(live?"勤務代碼："+esc(team):"目前離線，連上網路後會自動同步。"):"到「統計・設定 → 同步」輸入全隊共用的代碼。");
+  var h='<div class="top"><h2>使用說明</h2><button type="button" class="btn" data-close>關閉</button></div>'+
+   '<section class="sec"><h3 class="sechd">勤前檢查</h3>'+
+    chk(!!me,me?"呼號："+esc(me):"尚未設定呼號","點畫面右上角的「呼號」設定，隊友才知道是誰出勤。")+sync+
+    chk(!!pos,pos?"定位正常（誤差 ±"+Math.round(pos.acc)+" 公尺）":"尚未定位","請到戶外，並允許瀏覽器使用位置。定位成功後不要關閉系統。")+
+    '<div id="h-tiles">'+chk(false,"離線底圖檢查中…","")+'</div>'+
+    chk(true,"版本 "+APP_VERSION,"全隊版本要一致。不一樣的人到「統計・設定」最下方按「檢查更新」。")+'</section>'+
+   help("第一次使用（每支手機做一次）",["用 Safari 或 Chrome 打開網址，<b>允許使用位置</b>。","把系統<b>加到主畫面</b>（iPhone：分享 → 加入主畫面），之後從主畫面開啟。","點右上角設定<b>呼號</b>。","到「統計・設定 → 同步」輸入<b>勤務代碼</b>（全隊同一組）。","在訊號好的地方，到「統計・設定」按<b>下載廟區離線底圖</b>。"],true)+
+   help("看懂位置碼",["地圖分成 A、B、C 三欄（面向廟：左、中、右）和 1 到 6 排（1 靠廟前、6 靠廟後）。","每一格再切成九宮格，<b>下排 1 2 3 靠廟前，上排 7 8 9 靠廟後</b>。","合起來就是位置碼，例如 <b>B2-7</b>：B 欄第 2 排，格內左後方。","畫面左上角隨時顯示你現在所在的位置碼。"])+
+   '<div class="kpdemo" aria-hidden="true"><span>廟後</span><div><i>7</i><i>8</i><i>9</i><i>4</i><i>5</i><i>6</i><i>1</i><i>2</i><i>3</i></div><span>廟前</span></div>'+
+   help("建立案件",["人在患者旁邊：按地圖右下角<b>在我的位置建立案件</b>。","人不在現場，或在殿內定位不準：<b>直接點地圖上的位置</b>，再按「在此建立案件」。","無線電聽到位置碼：按<b>位置碼</b>，選區和數字，就會在地圖上標出來。","選檢傷、主訴、地標、患者後，按<b>建立案件</b>。全隊的手機都會跳出通知。"])+
+   help("出勤與找到患者",["到「案件」頁，按<b>我出勤</b>。地圖上方會出現箭頭、方向和距離。","跟著箭頭和地圖上的虛線走。箭頭和地圖不一致時，以地圖為準。","到了按<b>到達現場</b>，之後依情況按「後送」或「現場結案」。每一步都會自動記下時間。","位置有更新時，到案件「詳細 → 在地圖上改位置」。"])+
+   help("處置紀錄",["到達現場後，案件上會出現黃色的<b>填寫處置紀錄</b>。","依序填主訴、傷情部位、X A B C D E。只填有做的，沒異常就點「無明顯異常」。","GCS、瞳孔、四肢，以及血氧、血壓、血糖、體溫可以<b>記錄多次</b>，每次按「加入這筆」。","最後按<b>儲存處置紀錄</b>。"])+
+   help("訊號不好的時候",["系統照常可以用，案件會先存在手機，連上後自動補傳。","右上角顯示「待上傳」或「離線」時，<b>對方還看不到你的資料</b>，請用無線電補報。","案件上出現「尚未同步」也是同樣的意思。","<b>派遣和回報一律以無線電為主</b>，系統用來記錄和找位置。"])+
+   help("隱私與資料",["<b>不要輸入姓名、身分證字號、電話</b>。系統偵測到會擋下來。","勤務代碼等於密碼，只給當班隊員，不要貼在公開的地方。","不想讓隊友看到你的位置，可到「統計・設定 → 隱私」關閉位置分享。","勤務結束、管理員匯出資料後，到「統計・設定 → 隱私」清除這支手機上的資料。"]);
+  openSheet(h);
+  if(window.caches)caches.open("ems-tiles").then(function(c){return c.keys()}).then(function(k){var b=$("h-tiles");if(b)b.innerHTML=chk(k.length>0,k.length?"離線底圖已下載（"+k.length+" 張）":"尚未下載離線底圖","到「統計・設定」按「下載廟區離線底圖」，要在訊號好的地方做。")}).catch(function(){});
+}
+function help(title,steps,open){return'<details class="help"'+(open?" open":"")+'><summary>'+title+'</summary><ol>'+steps.map(function(x){return'<li>'+x+'</li>'}).join("")+'</ol></details>'}
 function closeSheet(){$("sheet").hidden=true;form=null;if(typeof needReload!=="undefined"&&needReload)return location.reload();render()}
 function askCode(title,then){
   var code=String(Math.floor(1000+Math.random()*9000));form={mode:"confirm",code:code,then:then};
@@ -748,6 +798,11 @@ function getTiles(btn){
 document.addEventListener("click",function(e){
   var t=e.target.closest("button");if(!t)return;var d=t.dataset,id=t.id;
   if(d.tab)return show(d.tab);
+  if((id==="f-save"||id==="f-update"||id==="tx-save")&&hasPII())return toast("請勿輸入身分證字號或電話，刪除後再儲存");
+  if(id==="helpBtn"||id==="helpOpen")return openHelp();
+  if(id==="shareBtn"){share=!share;ls("ems.share",share);if(!share&&root)root.collection("crew").doc(dev).delete().catch(function(){});lastPub={t:0,ll:null};renderSettings();toast(share?"已開啟位置分享":"已關閉位置分享，隊友看不到你的位置");return}
+  if(id==="wipeLocal"){var nd=Object.keys(dirty).length;return askCode(nd?"清除資料（有 "+nd+" 筆尚未上傳，會遺失）":"登出並清除這支手機上的資料",function(){localWipe(function(){ls("ems.team","");location.reload()})})}
+  if(id==="wipeCloud")return askCode("永久刪除全部案件（無法復原）",wipeCloud);
   if(d.step)return step(d.id,d.step);
   if(d.open)return openDetail(d.open);
   if(d.show){var ll0=caseLL(cases[d.show]);closeSheet();show("map");if(ll0)map.setView(ll0,19);return}
@@ -858,7 +913,10 @@ document.addEventListener("click",function(e){
   if(id==="saveTeam"){
     var tv=$("teamInput").value.trim();
     if(tv&&!/^[A-Za-z0-9_-]{6,40}$/.test(tv))return toast("代碼需為 6–40 碼英數字");
-    ls("ems.team",tv);location.reload();return;
+    if(tv===team)return toast("代碼沒有變更");
+    var weak=tv&&!(tv.length>=8&&/[A-Za-z]/.test(tv)&&/\d/.test(tv)),nd2=Object.keys(dirty).length;
+    if((weak||nd2)&&d.sure!==tv){d.sure=tv;return toast(nd2?"有 "+nd2+" 筆尚未上傳，換代碼後會遺失。再按一次確定":"這組代碼太短或太簡單，容易被猜到。建議 8 碼以上並混合英文和數字。再按一次仍要使用")}
+    d.sure="";localWipe(function(){ls("ems.team",tv);location.reload()});return;
   }
   if(id==="newEv"){
     return askCode("開始新活動",function(){site.eventId="e"+Date.now().toString(36);site.eventName=EVENT_NAME;saveSite("已開始新活動，舊案件在「過去活動」");renderSettings()});
@@ -870,6 +928,7 @@ window.addEventListener("offline",function(){live=false;syncPill()});
 
 /* ---------- 啟動 ---------- */
 initMap();render();startGPS();connect();
+if(!ls("ems.helped")&&!me)setTimeout(function(){if($("sheet").hidden)openHelp()},800);
 setInterval(function(){if(needReload&&$("sheet").hidden)return location.reload();flush();publishPos();drawCrew();drawNav();if(tab==="list"&&$("sheet").hidden)renderList()},20000);
 window.addEventListener("online",flush);
 function wake(){try{if(navigator.wakeLock)navigator.wakeLock.request("screen").catch(function(){})}catch(e){}}
