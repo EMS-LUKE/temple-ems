@@ -1,5 +1,5 @@
 // 更新任何檔案後，請把版本號加一，手機才會抓到新版。
-var VERSION = "v10";
+var VERSION = "v11";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
@@ -12,7 +12,7 @@ var FILES = [
 ];
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(SHELL).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(SHELL).then(function (c) { return c.addAll(FILES.map(function (f) { return new Request(f, { cache: "reload" }); })); }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener("activate", function (e) {
@@ -45,7 +45,7 @@ self.addEventListener("fetch", function (e) {
     e.respondWith(caches.open(SHELL).then(function (cache) {
       var key = req.mode === "navigate" ? "index.html" : req;
       return cache.match(key, { ignoreSearch: true }).then(function (hit) {
-        var net = fetch(req).then(function (res) {
+        var net = fetch(req.url, { cache: "no-cache" }).then(function (res) {
           if (res && res.ok) cache.put(key, res.clone()).catch(function () {});
           return res;
         });
