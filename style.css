@@ -162,7 +162,7 @@ legend,label.l{font-size:.85rem;color:var(--muted);padding:0;font-weight:600}
 :root:not([data-theme="light"]) .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 }
 :root[data-theme="dark"] .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.chips.seg{display:grid;grid-template-columns:repeat(3,1fr)}
+.chips.seg{display:grid;grid-template-columns:repeat(2,1fr)}
 .chips.seg .chip{min-height:54px;font-weight:700}
 .chips.seg .chip:not([aria-pressed="true"]){background:var(--surface)}
 .chip.t1{color:var(--red)} .chip.t2{color:var(--yel)} .chip.t3{color:var(--grn)}
