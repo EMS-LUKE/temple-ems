@@ -210,3 +210,13 @@ fieldset[data-sec]>legend{float:left;width:100%;font-size:1.05rem;font-weight:70
 fieldset[data-sec] .chip{background:var(--bg)}
 fieldset[data-sec] .chip[aria-pressed="true"]{background:var(--plate);color:#fff}
 fieldset[data-sec] .vsrow{background:var(--bg);box-shadow:none}
+/* 傷情部位 */
+.injs{display:flex;flex-direction:column;gap:6px}
+.inj{background:var(--surface);border:1.5px solid var(--line);border-radius:10px}
+.inj summary{padding:12px 14px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px}
+.inj[open] summary{border-bottom:1px solid var(--line)}
+.injn{font-size:.8rem;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:999px;padding:1px 10px}
+.injn:empty{display:none}
+.injb{padding:12px;display:flex;flex-direction:column;gap:8px}
+.inl .chips{flex-wrap:nowrap}
+.inl .chips .chip{min-width:48px;padding:8px 10px;font-weight:700}
