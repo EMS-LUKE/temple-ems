@@ -275,3 +275,10 @@ button,.chip,.btn,summary{touch-action:manipulation}
 .kpdemo i{font-style:normal;font-family:var(--num);font-weight:700;font-size:1.3rem;background:var(--plate);color:#fff;border-radius:6px;height:38px;display:grid;place-items:center}
 
 :root[data-theme="light"]{color-scheme:light}
+
+/* v36 標題列兩排 */
+header{flex-wrap:wrap;justify-content:center;gap:8px}
+h1{flex:1 0 100%;text-align:center;font-size:1.05rem}
+header .pill{flex:0 1 auto;min-width:0}
+#who{max-width:11em;overflow:hidden;text-overflow:ellipsis;display:block}
+@media (max-width:380px){header{gap:8px 5px}header .pill{font-size:.74rem;padding:4px 8px}}

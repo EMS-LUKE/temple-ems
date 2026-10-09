@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v34";
+var APP_VERSION="v36";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -470,7 +470,7 @@ var TX=[
 var TXSHORT={X:"X 大出血",S:"C 脊椎",A:"A 呼吸道",B:"B 呼吸",C:"C 循環",D:"D 失能",E:"E 暴露"};
 var AVPU=[["A","A 清"],["V","V 聲"],["P","P 痛"],["U","U 否"]];
 var IV_G=["18","20","22","24"], IV_S=["右手","左手","右腳","左腳"], IV_F="N/S 500 mL";
-var DKEYS=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL","lU","lL"], DNEW=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL"], VKEYS=["spo2","sbp","dbp","glu","temp"];
+var DKEYS=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL","lU","lL"], DNEW=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL"], VKEYS=["spo2","hr","sbp","dbp","glu","temp"];
 function gcsTotal(t){return(t.gE&&t.gV&&t.gM)?Number(t.gE)+Number(t.gV)+Number(t.gM):null}
 // 把舊版資料整理成現在的格式（不改動原資料）
 function txNorm(c){
@@ -506,7 +506,7 @@ function dsText(t){
   if(t.lL)ex.push("下肢（"+t.lL+"）");
   return ex.join("、");
 }
-function vsText(v){var a=[];if(v.spo2)a.push("血氧 "+v.spo2+"%");if(v.sbp||v.dbp)a.push("血壓 "+(v.sbp||"_")+"/"+(v.dbp||"_"));if(v.glu)a.push("血糖 "+v.glu);if(v.temp)a.push("體溫 "+v.temp+"°C");return a.join("、")}
+function vsText(v){var a=[];if(v.spo2)a.push("血氧 "+v.spo2+"%");if(v.hr)a.push("脈搏 "+v.hr+" 次/分");if(v.sbp||v.dbp)a.push("血壓 "+(v.sbp||"_")+"/"+(v.dbp||"_"));if(v.glu)a.push("血糖 "+v.glu);if(v.temp)a.push("體溫 "+v.temp+"°C");return a.join("、")}
 function ivText(t){var a=[];if(t.ivF)a.push(t.ivF);if(t.ivG||t.ivS)a.push("IC "+(t.ivG?t.ivG+"G":"")+(t.ivS?" "+t.ivS:""));return a.length?"輸液（"+a.join("、").replace(/\s+/g," ")+"）":"輸液"}
 function avpuLabel(v){var f=AVPU.filter(function(a){return a[0]===v})[0];return f?f[1]:""}
 function txLines(c){
@@ -613,7 +613,7 @@ function openTx(id){
     if(k==="S")h+='<section class="sec" data-sec="V" role="group" aria-label="C 意識"><h3 class="sechd">C 意識</h3>'+sub("AVPU")+oneChips("avpu",AVPU,t.avpu)+sub("情況")+txChips("cvS",["低血糖"],t.cvS||[])+sub("處置")+txChips("cvA",["糖粉"],t.cvA||[])+'</section>';
   });
   h+='<fieldset><legend>輔助檢查數值（可記錄多次）</legend><div id="tx-vs" class="vs"></div>'+
-     '<div class="vsnew"><div class="inl"><label class="fld"><span>測量時間</span><input type="time" id="tx-vt" value="'+hm(Date.now())+'"></label></div><div class="inl">'+num("tx-spo2","血氧","","%",70)+
+     '<div class="vsnew"><div class="inl"><label class="fld"><span>測量時間</span><input type="time" id="tx-vt" value="'+hm(Date.now())+'"></label></div><div class="inl">'+num("tx-spo2","血氧","","%",70)+num("tx-hr","脈搏","","次/分",70)+'</div><div class="inl">'+
      '<span class="fld nw"><span>血壓</span><input type="text" inputmode="decimal" id="tx-sbp" maxlength="4" aria-label="收縮壓" value="" style="width:70px"><span>/</span><input type="text" inputmode="decimal" id="tx-dbp" maxlength="4" aria-label="舒張壓" value="" style="width:70px"><span>mmHg</span></span></div>'+
      '<div class="inl">'+num("tx-glu","血糖","","mg/dL",70)+num("tx-temp","體溫","","°C",70)+'</div><button type="button" class="btn" id="tx-vsadd">加入這筆</button></div></fieldset>'+
      '<fieldset><label class="l" for="tx-other">其他</label><textarea id="tx-other" rows="2" maxlength="300" placeholder="手動輸入">'+esc(t.other||"")+'</textarea></fieldset>'+
@@ -717,7 +717,7 @@ function openHelp(){
    '<div class="kpdemo" aria-hidden="true"><span>廟後</span><div><i>7</i><i>8</i><i>9</i><i>4</i><i>5</i><i>6</i><i>1</i><i>2</i><i>3</i></div><span>廟前</span></div>'+
    help("建立案件",["人在患者旁邊：按地圖右下角<b>在我的位置建立案件</b>。","人不在現場，或在殿內定位不準：<b>直接點地圖上的位置</b>，再按「在此建立案件」。","無線電聽到位置碼：按<b>位置碼</b>，選區和數字，就會在地圖上標出來。","選檢傷、主訴、地標、患者後，按<b>建立案件</b>。全隊的手機都會跳出通知。"])+
    help("出勤與找到患者",["到「案件」頁，按<b>我出勤</b>。地圖上方會出現箭頭、方向和距離。","跟著箭頭和地圖上的虛線走。箭頭和地圖不一致時，以地圖為準。","到了按<b>到達現場</b>，之後依情況按「後送」或「現場結案」。每一步都會自動記下時間。","位置有更新時，到案件「詳細 → 在地圖上改位置」。"])+
-   help("處置紀錄",["到達現場後，案件上會出現黃色的<b>填寫處置紀錄</b>。","依序填主訴、傷情部位、X A B C D E。只填有做的，沒異常就點「無明顯異常」。","GCS、瞳孔、四肢，以及血氧、血壓、血糖、體溫可以<b>記錄多次</b>，每次按「加入這筆」。","最後按<b>儲存處置紀錄</b>。"])+
+   help("處置紀錄",["到達現場後，案件上會出現黃色的<b>填寫處置紀錄</b>。","依序填主訴、傷情部位、X A B C D E。只填有做的，沒異常就點「無明顯異常」。","GCS、瞳孔、四肢，以及血氧、脈搏、血壓、血糖、體溫可以<b>記錄多次</b>，每次按「加入這筆」。","最後按<b>儲存處置紀錄</b>。"])+
    help("訊號不好的時候",["系統照常可以用，案件會先存在手機，連上後自動補傳。","右上角顯示「待上傳」或「離線」時，<b>對方還看不到你的資料</b>，請用無線電補報。","案件上出現「尚未同步」也是同樣的意思。","<b>派遣和回報一律以無線電為主</b>，系統用來記錄和找位置。"])+
    help("隱私與資料",["<b>不要輸入姓名、身分證字號、電話</b>。系統偵測到會擋下來。","勤務代碼等於密碼，只給當班隊員，不要貼在公開的地方。","不想讓隊友看到你的位置，可到「統計・設定 → 隱私」關閉位置分享。","勤務結束、管理員匯出資料後，到「統計・設定 → 隱私」清除這支手機上的資料。"]);
   openSheet(h);
@@ -754,11 +754,11 @@ function step(id,to){
   c.status=to;$("sheet").hidden=true;form=null;save(c);toast(caseCode(c)+" "+STAT[to]+" "+hm(now));
 }
 function exportText(sep,eid){
-  var head=["案號","區碼","位置碼","區名","地標","主訴","檢傷","性別","年齡層","狀態","處置","出勤人員","通報","出勤","到達","後送","結案","到達分鐘","緯度","經度","備註","建立者","處置紀錄","AVPU","評估次數","最後 GCS","測量次數","最後測量時間","血氧","收縮壓","舒張壓","血糖","體溫"];
+  var head=["案號","區碼","位置碼","區名","地標","主訴","檢傷","性別","年齡層","狀態","處置","出勤人員","通報","出勤","到達","後送","結案","到達分鐘","緯度","經度","備註","建立者","處置紀錄","AVPU","評估次數","最後 GCS","測量次數","最後測量時間","血氧","脈搏","收縮壓","舒張壓","血糖","體溫"];
   var rows=casesOf(eid||site.eventId).sort(function(a,b){return a.times.reported-b.times.reported}).map(function(c){
     return[c.no,c.zone,caseCode(c),zname(c.zone),c.landmark,c.complaint,["","紅","黃","綠"][c.triage]||"",c.sex,c.age,STAT[c.status],c.disposition,c.crew,
       hm(c.times.reported),hm(c.times.dispatched),hm(c.times.arrived),hm(c.times.transport),hm(c.times.closed),
-      mins(c.times.reported,c.times.arrived),c.lat?c.lat.toFixed(6):"",c.lng?c.lng.toFixed(6):"",c.note,c.createdBy,txLines(c).join("；"),(c.tx||{}).avpu||"",dsOf(c).length||"",gcsTotal(lastDs(c))||"",vsOf(c).length||"",lastVs(c).t?hm(lastVs(c).t):"",lastVs(c).spo2,lastVs(c).sbp,lastVs(c).dbp,lastVs(c).glu,lastVs(c).temp].map(function(v){
+      mins(c.times.reported,c.times.arrived),c.lat?c.lat.toFixed(6):"",c.lng?c.lng.toFixed(6):"",c.note,c.createdBy,txLines(c).join("；"),(c.tx||{}).avpu||"",dsOf(c).length||"",gcsTotal(lastDs(c))||"",vsOf(c).length||"",lastVs(c).t?hm(lastVs(c).t):"",lastVs(c).spo2,lastVs(c).hr,lastVs(c).sbp,lastVs(c).dbp,lastVs(c).glu,lastVs(c).temp].map(function(v){
         v=String(v==null?"":v).replace(/[\t\n\r]+/g," ");return sep===","?'"'+v.replace(/"/g,'""')+'"':v}).join(sep)});
   return{text:[head.join(sep)].concat(rows).join("\n"),n:rows.length};
 }
