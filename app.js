@@ -24,6 +24,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
+var APP_VERSION="v25";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -361,6 +362,7 @@ function renderSettings(){
   $("pastEv").innerHTML=ek.length?ek.map(function(k){var t=ev[k];
     return'<div class="pev"><div><b>'+esc(md(Math.min.apply(null,t)))+' ～ '+esc(md(Math.max.apply(null,t)))+'</b>　'+t.length+' 件</div><div class="rowb"><button type="button" class="btn" data-evdl="'+esc(k)+'">下載 CSV</button><button type="button" class="btn" data-evback="'+esc(k)+'">切回這場活動</button></div></div>'}).join("")
     :'<p class="muted">沒有過去的活動。按過「開始新活動」之後，先前的案件會列在這裡，可以下載或切回去。</p>';
+  $("verInfo").textContent="目前版本 "+APP_VERSION;
   $("teamInput").value=team;
   $("teamInfo").textContent=!CFG.firebase?"尚未設定 Firebase（見 README），目前是單機模式，輸入代碼也不會同步。":(team?"目前代碼："+team:"尚未輸入，資料只存在這支手機。");
   tileCount();
@@ -770,6 +772,7 @@ document.addEventListener("click",function(e){
     var dt=new Date();dlCsv(null,"救護案件-"+dt.getFullYear()+("0"+(dt.getMonth()+1)).slice(-2)+("0"+dt.getDate()).slice(-2)+".csv");return;
   }
   if(id==="getTiles")return getTiles(t);
+  if(id==="updNow")return selfUpdate(true);
   if(id==="saveZ"){var z={};CODES.forEach(function(c){var v=$("z-"+c).value.trim();if(v&&v!==DEF[c])z[c]=v});site.zones=z;saveSite("區名已儲存");return}
   if(id==="saveTeam"){
     var tv=$("teamInput").value.trim();
@@ -791,6 +794,39 @@ window.addEventListener("online",flush);
 function wake(){try{if(navigator.wakeLock)navigator.wakeLock.request("screen").catch(function(){})}catch(e){}}
 wake();document.addEventListener("visibilitychange",function(){if(!document.hidden)wake()});
 var needReload=false;
+// 不依賴瀏覽器的背景更新：頁面自己比對版本，把整包新檔案抓齊後才換上，中途失敗就維持原狀
+function selfUpdate(manual){
+  if(!window.caches||!navigator.serviceWorker||!navigator.serviceWorker.controller){if(manual)toast("請重新整理頁面來更新");return}
+  var stamp="fresh="+Date.now();
+  if(manual)toast("檢查更新中…");
+  fetch("sw.js?"+stamp,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.text()}).then(function(txt){
+    var m=/VERSION\s*=\s*"([^"]+)"/.exec(txt),fm=/FILES\s*=\s*\[([\s\S]*?)\]/.exec(txt);
+    if(!m||!fm)throw 0;
+    if(m[1]===APP_VERSION){if(manual)toast("已是最新版 "+APP_VERSION);return}
+    if(manual)toast("發現新版 "+m[1]+"，下載中…");
+    var files=JSON.parse("["+fm[1]+"]");
+    return Promise.all(files.map(function(f){
+      return fetch(f+(f.indexOf("?")<0?"?":"&")+stamp,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.blob().then(function(b){return[f,b,r.headers.get("content-type")||""]})});
+    })).then(function(list){
+      return caches.keys().then(function(ks){
+        return Promise.all(ks.filter(function(k){return k.indexOf("ems-shell-")===0}).map(function(k){
+          return caches.open(k).then(function(c){return Promise.all(list.map(function(x){
+            return c.put(new Request(x[0]),new Response(x[1],{headers:{"content-type":x[2]}}));
+          }))});
+        }));
+      });
+    }).then(function(){
+      needReload=true;if($("sheet").hidden)location.reload();else toast("新版已下載，關閉這個畫面後會自動更新");
+    });
+  }).catch(function(){if(manual)toast("無法更新，請確認網路後再試")});
+}
+function autoUpdate(){
+  var last=0;try{last=Number(sessionStorage.getItem("ems.upd"))||0}catch(e){}
+  if(Date.now()-last<10*60000||needReload)return;
+  try{sessionStorage.setItem("ems.upd",String(Date.now()))}catch(e){}
+  selfUpdate(false);
+}
+setTimeout(autoUpdate,12000);setInterval(autoUpdate,30*60000);
 if("serviceWorker" in navigator){
   var hadSW=!!navigator.serviceWorker.controller;
   navigator.serviceWorker.register("sw.js").then(function(r){

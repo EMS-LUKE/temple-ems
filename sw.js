@@ -1,5 +1,5 @@
 // 更新任何檔案後，一定要把版本號加一，手機才會抓到新版（會整包一起換，不會新舊混用）。
-var VERSION = "v24";
+var VERSION = "v25";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
@@ -38,6 +38,12 @@ self.addEventListener("fetch", function (e) {
         });
       });
     }));
+    return;
+  }
+
+  // 網址帶 fresh 參數時一律直接上網抓最新的，給頁面自己檢查與更新用
+  if (url.origin === self.location.origin && url.searchParams.has("fresh")) {
+    e.respondWith(fetch(req.url, { cache: "no-store" }));
     return;
   }
 
