@@ -58,13 +58,13 @@ function uvOf(ll){
   return(u<0||u>=1||v<0||v>=1)?null:[u,v];
 }
 function zoneAt(ll){var t=uvOf(ll);return t?COLS[Math.floor(t[0]*3)]+(Math.floor(t[1]*NROW)+1):"X"}
-// 九宮格：像電話按鍵，上排(1 2 3)靠後殿，下排(7 8 9)靠牌樓，左右以面向廟為準
-function subAt(ll){var t=uvOf(ll);if(!t)return 0;var su=Math.min(2,Math.floor((t[0]*3%1)*3)),sv=Math.min(2,Math.floor((t[1]*NROW%1)*3));return(2-sv)*3+su+1}
+// 九宮格：由廟前往廟後數。下排(1 2 3)靠廟前，上排(7 8 9)靠廟後，左右以面向廟為準
+function subAt(ll){var t=uvOf(ll);if(!t)return 0;var su=Math.min(2,Math.floor((t[0]*3%1)*3)),sv=Math.min(2,Math.floor((t[1]*NROW%1)*3));return sv*3+su+1}
 function posCode(ll){var z=zoneAt(ll);return z==="X"?"X":z+"-"+subAt(ll)}
 function codeLL(zone,n){
   var c=COLS.indexOf(zone[0]),r=parseInt(zone.slice(1),10);if(c<0||!r)return null;
   if(!n)return gp((c+.5)/3,(r-.5)/NROW);
-  var su=(n-1)%3,sv=2-Math.floor((n-1)/3);return gp((c+(su+.5)/3)/3,(r-1+(sv+.5)/3)/NROW);
+  var su=(n-1)%3,sv=Math.floor((n-1)/3);return gp((c+(su+.5)/3)/3,(r-1+(sv+.5)/3)/NROW);
 }
 function caseCode(c){
   if(c.zone==="H"||c.zone==="X")return c.zone;
@@ -358,8 +358,8 @@ function show(t){tab=t;["map","list","stat"].forEach(function(k){$("v-"+k).hidde
 function chips(name,opts,val){return'<div class="chips">'+opts.map(function(o){var v=o.v!==undefined?o.v:o,l=o.l||o;
   return'<button type="button" class="chip '+(o.c||"")+'" data-f="'+name+'" data-v="'+esc(v)+'" aria-pressed="'+(String(val)===String(v))+'">'+esc(l)+'</button>'}).join("")+'</div>'}
 function zoneSel(z){return'<select id="f-zone" aria-label="區碼">'+CODES.map(function(k){return'<option value="'+k+'"'+(k===z?" selected":"")+'>'+k+" "+esc(zname(k))+'</option>'}).join("")+'</select>'}
-function keypad(n){var h='<div class="kp">';for(var i=1;i<=9;i++)h+='<button type="button" class="chip" data-sub="'+i+'" aria-pressed="'+(i===n)+'">'+i+'</button>';
-  return h+'</div><p class="muted">九宮格：上排靠後殿，下排靠牌樓，左右以面向廟為準。</p>'}
+function keypad(n){var h='<div class="kp">';[7,8,9,4,5,6,1,2,3].forEach(function(i){h+='<button type="button" class="chip" data-sub="'+i+'" aria-pressed="'+(i===n)+'">'+i+'</button>'});
+  return h+'</div><p class="muted">九宮格跟地圖方向一樣：下排 1 2 3 靠廟前，上排 7 8 9 靠廟後，左右以面向廟為準。</p>'}
 function bigCode(){var z=$("f-zone").value;return(z==="H"||z==="X")?z:z+"-"+(form.sub||5)}
 function openCode(){
   form={mode:"code",zone:"",sub:5};
