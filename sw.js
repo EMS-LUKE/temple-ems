@@ -1,5 +1,5 @@
-// 更新任何檔案後，請把版本號加一，手機才會抓到新版。
-var VERSION = "v17";
+// 更新任何檔案後，一定要把版本號加一，手機才會抓到新版（會整包一起換，不會新舊混用）。
+var VERSION = "v18";
 var SHELL = "ems-shell-" + VERSION;
 var TILES = "ems-tiles";
 var FILES = [
@@ -41,17 +41,12 @@ self.addEventListener("fetch", function (e) {
     return;
   }
 
-  // 程式本體：先用已存的（離線可開），同時在背景更新
+  // 程式本體：只用這個版本整包存好的檔案，避免新舊檔案混用。更新一律靠 VERSION 換版。
   if (url.origin === self.location.origin) {
     e.respondWith(caches.open(SHELL).then(function (cache) {
       var key = req.mode === "navigate" ? "index.html" : req;
       return cache.match(key, { ignoreSearch: true }).then(function (hit) {
-        var net = fetch(req.url, { cache: "no-cache" }).then(function (res) {
-          if (res && res.ok) cache.put(key, res.clone()).catch(function () {});
-          return res;
-        });
-        if (hit) { net.catch(function () {}); return hit; }
-        return net;
+        return hit || fetch(req);
       });
     }));
   }

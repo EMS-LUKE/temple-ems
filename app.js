@@ -425,7 +425,7 @@ function openDetail(id){
   h+='<button type="button" class="btn danger" data-del="'+esc(id)+'">刪除案件（無法復原）</button>';
   openSheet(h);
 }
-function closeSheet(){$("sheet").hidden=true;form=null;render()}
+function closeSheet(){$("sheet").hidden=true;form=null;if(typeof needReload!=="undefined"&&needReload)return location.reload();render()}
 function askCode(title,then){
   var code=String(Math.floor(1000+Math.random()*9000));form={mode:"confirm",code:code,then:then};
   openSheet('<div class="top"><h2>'+esc(title)+'</h2><button type="button" class="btn" data-close>取消</button></div>'+
@@ -619,10 +619,21 @@ window.addEventListener("offline",function(){live=false;syncPill()});
 
 /* ---------- 啟動 ---------- */
 initMap();render();startGPS();connect();
-setInterval(function(){flush();publishPos();drawCrew();drawNav();if(tab==="list"&&$("sheet").hidden)renderList()},20000);
+setInterval(function(){if(needReload&&$("sheet").hidden)return location.reload();flush();publishPos();drawCrew();drawNav();if(tab==="list"&&$("sheet").hidden)renderList()},20000);
 window.addEventListener("online",flush);
 function wake(){try{if(navigator.wakeLock)navigator.wakeLock.request("screen").catch(function(){})}catch(e){}}
 wake();document.addEventListener("visibilitychange",function(){if(!document.hidden)wake()});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+var needReload=false;
+if("serviceWorker" in navigator){
+  var hadSW=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").then(function(r){
+    r.update().catch(function(){});setInterval(function(){r.update().catch(function(){})},30*60000);
+  }).catch(function(){});
+  // 新版整包存好並接手後，自動重新載入一次
+  navigator.serviceWorker.addEventListener("controllerchange",function(){
+    if(!hadSW||needReload)return;needReload=true;
+    if($("sheet").hidden)location.reload();else toast("系統有新版，關閉這個畫面後會自動更新");
+  });
+}
 window.__ems={zoneAt:zoneAt,tileList:tileList,posCode:posCode,codeLL:codeLL,remote:function(r){applyRemote(r);persist();render()},setHeading:function(h){heading=h;drawNav()},firstDone:function(){firstSnap=false}};
 })();
