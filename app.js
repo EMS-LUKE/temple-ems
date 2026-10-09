@@ -14,7 +14,9 @@ var DEF={A6:"左後方",B6:"天公殿",C6:"右後方",A5:"左廂後段",B5:"佛�
  A4:"左廂",B4:"五王殿",C4:"右廂",A3:"左側門",B3:"媽祖殿（正殿）",C3:"右側門",
  A2:"廟埕左",B2:"廟埕中央",C2:"廟埕右",A1:"左停車場",B1:"牌樓",C1:"右停車場",H:"香客大樓",X:"場外／其他"};
 var COMPLAINTS=["昏倒／意識改變","OHCA","胸痛","呼吸困難","抽搐","熱傷害","外傷","燒燙傷","跌倒","其他"];
-var MARKS=["金爐旁","香爐前","階梯","殿內","廁所","攤位","舞台","護城河邊"];
+// 依首字筆畫由少到多排列，「其他」固定最後
+var MARKS=["戶外","走廊","金爐旁","香爐旁","涼亭","廁所","階梯","殿內","舞台旁","餐廳","護城河旁","攤位","其他"];
+function who(c){return[c.sex==="其他"?"性別其他":c.sex,c.age==="其他"?"年齡其他":c.age].filter(Boolean).join("")}
 var STAT={new:"待出勤",enroute:"出勤中",onscene:"處置中",transport:"後送中",closed:"結案",cancel:"取消"};
 var TKEY=[["reported","通報"],["dispatched","出勤"],["arrived","到達"],["transport","後送"],["closed","結案"]];
 var TRI=[{v:1,l:"紅　危急",c:"t1"},{v:2,l:"黃　緊急",c:"t2"},{v:3,l:"綠　輕症",c:"t3"}];
@@ -47,7 +49,7 @@ function tomb(c){return{id:c.id,eventId:c.eventId,no:c.no,deleted:true}}
 function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},2800)}
 function unsynced(id){return !!(CFG.firebase&&team&&dirty[id])}
 function ago(t){if(!t)return"尚未同步過";var m=Math.floor((Date.now()-t)/60000);return m<1?"剛剛同步":m<60?"上次同步 "+m+" 分前":"上次同步 "+hm(t)}
-function radio(c){return[caseCode(c)+" "+zname(c.zone),c.landmark,[c.sex,c.age].filter(Boolean).join(""),c.complaint].filter(Boolean).join("、")}
+function radio(c){return[caseCode(c)+" "+zname(c.zone),c.landmark,who(c),c.complaint].filter(Boolean).join("、")}
 
 /* ---------- 座標換算 ---------- */
 var RAD=Math.PI/180, ER=6371000;
@@ -283,7 +285,7 @@ function drawNav(){
     box.hidden=true;if(navLine&&map){map.removeLayer(navLine);navLine=null}return;
   }
   var ll=caseLL(c),ar=$("navArrow");box.hidden=false;
-  $("navText").textContent=caseCode(c)+(c.landmark?" "+c.landmark:"");
+  $("navText").textContent=[caseCode(c),c.landmark,who(c),c.complaint].filter(Boolean).join("、");
   if(!pos||!ll){ar.style.visibility="hidden";$("navDist").textContent="等待定位…";$("navMode").textContent="";return}
   var b=bearingTo(ll);
   if(b.m<8){ar.style.visibility="hidden";$("navDist").textContent="就在附近（8 公尺內）";$("navMode").textContent=""}
@@ -319,7 +321,7 @@ function card(c){
   var el=active(c)?Math.max(0,Math.round((Date.now()-c.times.reported)/60000)):null,g=active(c)?guide(caseLL(c)):"";
   var h='<article class="case'+(active(c)?"":" done")+'"><div class="code t'+(c.triage||3)+'">'+esc(caseCode(c))+'</div>'+
    '<div class="body"><div class="where">'+esc(zname(c.zone))+(c.landmark?"・"+esc(c.landmark):"")+'</div>'+
-   '<div class="meta">'+esc(c.complaint||"未填主訴")+" "+esc([c.sex,c.age].filter(Boolean).join(""))+(g?"・"+esc(g):"")+'</div></div>'+
+   '<div class="meta">'+esc(c.complaint||"未填主訴")+" "+esc(who(c))+(g?"・"+esc(g):"")+'</div></div>'+
    '<div class="body meta">'+esc(c.no)+"・"+STAT[c.status]+(c.crew?"・"+esc(c.crew):"")+(el!==null?"・已 "+el+" 分":"")+'</div>'+(unsynced(c.id)?'<div class="body" style="grid-column:1/-1"><span class="pill warn">尚未同步，請用無線電補報</span></div>':'')+'<div class="row">';
   (NEXT[c.status]||[]).forEach(function(n){h+='<button type="button" class="btn go" data-step="'+n[0]+'" data-id="'+esc(c.id)+'">'+n[1]+'</button>'});
   return h+'<button type="button" class="btn" data-open="'+esc(c.id)+'">詳細</button></div></article>';
@@ -386,8 +388,8 @@ function openNew(ll,acc){
    '<fieldset><legend>位置碼（自動帶入，不對請改）</legend>'+zoneSel(z)+keypad(form.sub)+'</fieldset>'+
    '<fieldset><legend>檢傷</legend>'+chips("triage",TRI,2)+'</fieldset>'+
    '<fieldset><legend>主訴</legend>'+chips("complaint",COMPLAINTS,"")+'</fieldset>'+
-   '<fieldset><legend>地標（讓出勤的人找得到）</legend>'+chips("landmark",MARKS,"")+'<input type="text" id="f-landmark" maxlength="40" placeholder="或自己打，例：第二根龍柱旁"></fieldset>'+
-   '<fieldset><legend>患者</legend>'+chips("sex",["男","女"],"")+chips("age",["幼童","青少年","成人","長者"],"")+'</fieldset>'+
+   '<fieldset><legend>地標（讓出勤的人找得到）</legend>'+chips("landmark",MARKS,"")+'<input type="text" id="f-landmark" maxlength="40" placeholder="手動輸入" aria-label="手動輸入地標"></fieldset>'+
+   '<fieldset><legend>患者</legend>'+chips("sex",["男","女","其他"],"")+chips("age",["兒童","青少年","成人","長者","其他"],"")+'</fieldset>'+
    '<fieldset><label class="l" for="f-note">備註</label><textarea id="f-note" rows="2" maxlength="300"></textarea></fieldset>'+
    '<button type="button" class="btn go" id="f-save">建立案件</button>');
 }
