@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b5cad">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="聖母廟救護">
+<title>鹿耳門聖母廟救護案件</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1 id="evName">聖母廟救護案件</h1>
+  <button class="pill" id="who" type="button">設定呼號</button>
+  <span class="pill" id="sync">單機模式</span>
+</header>
+
+<main>
+  <section id="v-map">
+    <div id="map"></div>
+    <div id="gps" class="gps">定位中…</div>
+    <div class="fabs">
+      <button type="button" class="fab" id="locate" aria-label="回到我的位置">◎</button>
+      <button type="button" class="fab go" id="here">＋ 我的位置建案</button>
+    </div>
+    <div class="bar" id="bar" hidden></div>
+  </section>
+
+  <section id="v-list" class="scroll" hidden><div class="list" id="list"></div></section>
+
+  <section id="v-stat" class="scroll" hidden>
+    <div class="col">
+      <div class="stats" id="stats"></div>
+      <div id="byzone" class="muted"></div>
+      <div class="rowb">
+        <button class="btn go" id="copy" type="button">複製案件（貼到 Excel）</button>
+        <button class="btn" id="dl" type="button">下載 CSV</button>
+      </div>
+      <textarea id="csv" rows="5" readonly hidden aria-label="案件資料"></textarea>
+
+      <h2>離線底圖</h2>
+      <p class="muted" id="tileInfo">尚未下載。</p>
+      <button class="btn go" id="getTiles" type="button">下載廟區離線底圖</button>
+      <p class="muted">請在訊號良好的地方（出勤前、家裡 Wi-Fi）按一次，每支手機都要各自下載。</p>
+
+      <h2>分區</h2>
+      <button class="btn" id="calib" type="button">校正分區（在地圖上點三個角）</button>
+      <div class="zedit" id="zedit"></div>
+      <button class="btn" id="saveZ" type="button">儲存區名</button>
+
+      <h2>同步</h2>
+      <label class="l" for="teamInput">勤務代碼（全隊輸入同一組，6 碼以上英數字）</label>
+      <input type="text" id="teamInput" maxlength="40" autocomplete="off" autocapitalize="off" placeholder="例：luermen2027a">
+      <button class="btn" id="saveTeam" type="button">儲存勤務代碼</button>
+      <p class="muted" id="teamInfo"></p>
+
+      <h2>活動</h2>
+      <label class="l" for="evInput">活動名稱</label>
+      <input type="text" id="evInput" maxlength="40" placeholder="例：元宵煙火勤務">
+      <button class="btn" id="saveEv" type="button">儲存名稱</button>
+      <button class="btn danger" id="newEv" type="button">開始新活動（舊案件不再顯示）</button>
+      <p class="muted">底圖來源：內政部國土測繪中心。</p>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button type="button" data-tab="map" aria-current="true">地圖</button>
+  <button type="button" data-tab="list" aria-current="false">案件 <span id="nAct"></span></button>
+  <button type="button" data-tab="stat" aria-current="false">統計・設定</button>
+</nav>
+
+<div class="sheet" id="sheet" hidden><div class="in" id="sheetIn"></div></div>
+<div id="toast" hidden role="status"></div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

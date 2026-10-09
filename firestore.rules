@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 知道勤務代碼的人才讀寫得到該組資料；不能列出有哪些代碼。
+    match /teams/{team}/{document=**} {
+      allow read, write: if team.size() >= 6;
+    }
+  }
+}
