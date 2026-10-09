@@ -205,11 +205,12 @@ body>nav button[aria-current="true"]::before{content:"";position:absolute;top:0;
 .inl.wide2 .fld{flex:1 1 140px}
 .inl.wide2 .fld input[type=text]{flex:1;width:100%;min-width:0;font-family:var(--font);font-size:1rem;font-weight:500;text-align:left}
 .sub{font-size:.8rem;font-weight:700;color:var(--accent);margin-top:4px}
-fieldset[data-sec]{background:var(--surface);border-radius:var(--r);padding:12px;box-shadow:var(--shadow)}
-fieldset[data-sec]>legend{float:left;width:100%;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:4px}
-fieldset[data-sec] .chip{background:var(--bg)}
-fieldset[data-sec] .chip[aria-pressed="true"]{background:var(--plate);color:#fff}
-fieldset[data-sec] .vsrow{background:var(--bg);box-shadow:none}
+.sec{background:var(--surface);border-radius:var(--r);padding:14px 12px 12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;min-width:0}
+.sechd{font-size:1.05rem;font-weight:700;color:var(--ink);margin:0}
+.sec .chip{background:var(--bg)}
+.sec .chip[aria-pressed="true"]{background:var(--plate);color:#fff}
+.sec .chip.t1[aria-pressed="true"],.sec .chip.t2[aria-pressed="true"],.sec .chip.t3[aria-pressed="true"]{color:inherit}
+.sec .vsrow{background:var(--bg);box-shadow:none}
 /* 傷情部位 */
 .injs{display:flex;flex-direction:column;gap:6px}
 .inj{background:var(--surface);border:1.5px solid var(--line);border-radius:10px}
@@ -220,3 +221,13 @@ fieldset[data-sec] .vsrow{background:var(--bg);box-shadow:none}
 .injb{padding:12px;display:flex;flex-direction:column;gap:8px}
 .inl .chips{flex-wrap:nowrap}
 .inl .chips .chip{min-width:48px;padding:8px 10px;font-weight:700}
+.limbs{display:flex;flex-direction:column;gap:8px}
+.limb{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.limb b{flex:0 0 3.6em;font-size:.95rem}
+.limb .chips{flex:1 1 220px;gap:6px}
+.limb .chip{padding:8px 10px;min-height:42px}
+.chips .brk{flex-basis:100%;height:0}
+/* iPhone：輸入框字級不小於 16px，避免點輸入框時畫面自動放大 */
+input,select,textarea{font-size:max(16px,1em)}
+button,.chip,.btn,summary{touch-action:manipulation}
+@media (prefers-color-scheme: dark){.sec .chip[aria-pressed="true"],.inj .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}}

@@ -25,7 +25,7 @@ var NEXT={new:[["enroute","我出勤"]],enroute:[["onscene","到達現場"]],ons
 var TILE={photo:"https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
           emap:"https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}"};
 var MAXN=CFG.maxNativeZoom||19;
-var APP_VERSION="v26";
+var APP_VERSION="v29";
 var EVENT_NAME=CFG.eventName||"鹿耳門聖母廟煙火勤務系統";
 
 /* ---------- 狀態 ---------- */
@@ -439,13 +439,13 @@ var CC_N=["心悸","肢體無力","喘／呼吸困難","發燒","意識改變","
 var W6=["擦傷","割傷","燒燙傷","撕裂傷","爆炸傷","穿刺傷"], W6b=["擦傷","割傷","撕裂傷","燒燙傷","爆炸傷","穿刺傷"];
 var INJ=[
  {k:"head",name:"頭部",loc:["頭頂","右側","左側","後腦"],sit:W6,act:["沖洗傷口","止血包紮"]},
- {k:"face",name:"顏面",loc:["額頭","鼻子","嘴巴","下巴","右眉","右眼","右臉","左眉","左眼","左臉"],locx:true,sit:["異物"].concat(W6),act:["沖洗傷口","止血包紮"]},
+ {k:"face",name:"顏面",loc:["額頭","鼻子","嘴巴","下巴","|","右眉","右眼","右臉","|","左眉","左眼","左臉"],locx:true,sit:["異物"].concat(W6),act:["沖洗傷口","止血包紮"]},
  {k:"neck",name:"頸部",loc:[],sit:W6,act:["沖洗傷口","止血包紮","填塞止血"]},
  {k:"front",name:"軀幹前側",loc:[],sit:W6b,act:["沖洗傷口","止血包紮"]},
  {k:"back",name:"軀幹背側",loc:[],sit:W6b,act:["沖洗傷口","止血包紮"]},
  {k:"arm",name:"上肢",loc:["右手","左手"],sit:W6b.concat(["截斷傷"]),act:["沖洗傷口","止血包紮","填塞止血","止血帶"]},
  {k:"leg",name:"下肢",loc:["右腳","左腳"],sit:W6b.concat(["截斷傷"]),act:["沖洗傷口","止血包紮","填塞止血","止血帶"]}];
-var LIMB_U=["右手","左手","正常","無力","麻痺","痠痛"], LIMB_L=["右腳","左腳","正常","無力","麻痺","痠痛"];
+var LIMBS=[["lRU","右上肢"],["lLU","左上肢"],["lRL","右下肢"],["lLL","左下肢"]], LIMB_OPT=["正常","無力","痠痛","麻痺"];
 var TX=[
  {k:"X",name:"X 大出血",sit:["穿刺傷","撕裂傷","割傷","爆炸傷","截斷傷"],act:["止血包紮","填塞止血","止血帶"]},
  {k:"S",name:"C 脊椎減移",sit:[],act:["頸圈","長背板","減移術"]},
@@ -457,7 +457,7 @@ var TX=[
 var TXSHORT={X:"X 大出血",S:"C 脊椎",A:"A 呼吸道",B:"B 呼吸",C:"C 循環",D:"D 失能",E:"E 暴露"};
 var AVPU=[["A","A 清"],["V","V 聲"],["P","P 痛"],["U","U 否"]];
 var IV_G=["18","20","22","24"], IV_S=["右手","左手","右腳","左腳"], IV_F="N/S 500 mL";
-var DKEYS=["gE","gV","gM","pR","pRr","pL","pLr","lU","lL"], VKEYS=["spo2","sbp","dbp","glu","temp"];
+var DKEYS=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL","lU","lL"], DNEW=["gE","gV","gM","pR","pRr","pL","pLr","lRU","lLU","lRL","lLL"], VKEYS=["spo2","sbp","dbp","glu","temp"];
 function gcsTotal(t){return(t.gE&&t.gV&&t.gM)?Number(t.gE)+Number(t.gV)+Number(t.gM):null}
 // 把舊版資料整理成現在的格式（不改動原資料）
 function txNorm(c){
@@ -488,6 +488,7 @@ function dsText(t){
   if(t.gE||t.gV||t.gM)ex.push("GCS E"+(t.gE||"_")+"V"+(t.gV||"_")+"M"+(t.gM||"_")+(gcsTotal(t)?"＝"+gcsTotal(t):""));
   function rx(v){return v==="+"?"（＋）":v==="-"?"（－）":""}
   if(t.pR||t.pL||t.pRr||t.pLr)ex.push("瞳孔 R "+(t.pR||"_")+rx(t.pRr)+" L "+(t.pL||"_")+rx(t.pLr));
+  LIMBS.forEach(function(l){if(t[l[0]])ex.push(l[1]+"（"+t[l[0]]+"）")});
   if(t.lU)ex.push("上肢（"+t.lU+"）");
   if(t.lL)ex.push("下肢（"+t.lL+"）");
   return ex.join("、");
@@ -530,7 +531,7 @@ function injLines(t){
 }
 function injCount(r){return r?((r.loc||[]).length+(r.sit||[]).length+(r.act||[]).length+(r.locx?1:0)+(r.sitx?1:0)):0}
 function injChips(k,g,opts,arr){
-  return'<div class="chips">'+opts.map(function(v){return'<button type="button" class="chip" data-inj="'+k+'" data-g="'+g+'" data-v="'+esc(v)+'" aria-pressed="'+((arr||[]).indexOf(v)>=0)+'">'+esc(v)+'</button>'}).join("")+'</div>';
+  return'<div class="chips">'+opts.map(function(v){if(v==="|")return'<span class="brk"></span>';return'<button type="button" class="chip" data-inj="'+k+'" data-g="'+g+'" data-v="'+esc(v)+'" aria-pressed="'+((arr||[]).indexOf(v)>=0)+'">'+esc(v)+'</button>'}).join("")+'</div>';
 }
 function injHtml(t){
   return INJ.map(function(g){
@@ -555,7 +556,8 @@ function dnClick(b){
   var d=b.dataset;
   if(d.dn1){var inp=$("tx-"+d.dn1),nv=inp.value===d.v?"":d.v;inp.value=nv;b.parentNode.querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed",String(x.dataset.v===nv))});return}
   var inp2=$("tx-"+d.dn),arr=inp2.value?inp2.value.split("、"):[],i=arr.indexOf(d.v);
-  if(i>=0)arr.splice(i,1);else arr.push(d.v);inp2.value=arr.join("、");b.setAttribute("aria-pressed",String(i<0));
+  if(i>=0)arr.splice(i,1);else if(d.v==="正常")arr=["正常"];else{arr=arr.filter(function(x){return x!=="正常"});arr.push(d.v)}
+  inp2.value=arr.join("、");b.parentNode.querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed",String(arr.indexOf(x.dataset.v)>=0))});
 }
 function dnChips(key,opts,single){return'<div class="chips">'+opts.map(function(o){var v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;return'<button type="button" class="chip" '+(single?"data-dn1":"data-dn")+'="'+key+'" data-v="'+esc(v)+'" aria-pressed="false">'+esc(l)+'</button>'}).join("")+'</div><input type="hidden" id="tx-'+key+'" value="">'}
 function txChips(key,opts,arr,cls){
@@ -576,7 +578,7 @@ function openTx(id){
      sub("傷情部位（可多處，點部位展開）")+'<div class="injs">'+injHtml(t)+'</div>'+
      sub("非創傷")+txChips("ccN",CC_N,t.ccN||[])+'<input type="text" id="tx-ccNx" maxlength="40" placeholder="手動輸入" aria-label="非創傷主訴手動輸入" value="'+esc(t.ccNx||"")+'"></fieldset>';
   TX.forEach(function(g){
-    var k=g.k,act=t[k]||[],sit=t[k+"s"]||[];h+='<fieldset data-sec="'+k+'"><legend>'+g.name+'</legend>';
+    var k=g.k,act=t[k]||[],sit=t[k+"s"]||[];h+='<section class="sec" data-sec="'+k+'" role="group" aria-label="'+g.name+'"><h3 class="sechd">'+g.name+'</h3>';
     if(g.sit.length)h+=sub("情況")+txChips(k+"s",g.sit,sit);
     if(k==="C")h+='<div class="inl">'+num("tx-crt","CRT",t.crt,"秒",70)+'</div>';
     if(k==="E")h+='<input type="text" id="tx-e" maxlength="80" placeholder="手動輸入" aria-label="暴露所見" value="'+esc(t.e||"")+'">';
@@ -584,12 +586,12 @@ function openTx(id){
       '<div class="inl">'+sel("tx-gE","GCS　E",4,"")+sel("tx-gV","V",5,"")+sel("tx-gM","M",6,"")+'<b id="tx-gcs" class="gcs"></b></div>'+
       '<div class="inl">'+num("tx-pR","瞳孔　R","","mm",64)+'<span class="fld"><span>對光</span></span>'+dnChips("pRr",[["+","＋"],["-","－"]],true)+'</div>'+
       '<div class="inl">'+num("tx-pL","瞳孔　L","","mm",64)+'<span class="fld"><span>對光</span></span>'+dnChips("pLr",[["+","＋"],["-","－"]],true)+'</div>'+
-      sub("感覺／運動功能　上肢")+dnChips("lU",LIMB_U)+sub("感覺／運動功能　下肢")+dnChips("lL",LIMB_L)+'<button type="button" class="btn" id="tx-dsadd">加入這筆</button></div>';
+      sub("感覺／運動功能")+'<div class="limbs">'+LIMBS.map(function(l){return'<div class="limb"><b>'+l[1]+'</b>'+dnChips(l[0],LIMB_OPT)+'</div>'}).join("")+'</div><button type="button" class="btn" id="tx-dsadd">加入這筆</button></div>';
     if(g.act.length)h+=sub("處置")+txChips(k,g.act,act);
     if(k==="X")h+='<div class="inl" id="tx-tq-row"'+(act.indexOf("止血帶")<0?" hidden":"")+'><label class="fld"><span>止血帶時間</span><input type="time" id="tx-tq" value="'+esc(t.tq||"")+'"></label><button type="button" class="btn" id="tx-now">現在</button></div>';
     if(k==="C")h+='<div class="vsnew" id="tx-iv-row"'+(act.indexOf("輸液")<0?" hidden":"")+'>'+sub("輸液")+oneChips("ivF",[IV_F],t.ivF)+sub("IC 號數")+oneChips("ivG",IV_G,t.ivG)+sub("部位")+oneChips("ivS",IV_S,t.ivS)+'</div>';
-    h+=txChips(k,[NA],act,"na")+'</fieldset>';
-    if(k==="S")h+='<fieldset data-sec="V"><legend>C 意識</legend>'+sub("AVPU")+oneChips("avpu",AVPU,t.avpu)+sub("情況")+txChips("cvS",["低血糖"],t.cvS||[])+sub("處置")+txChips("cvA",["糖粉"],t.cvA||[])+'</fieldset>';
+    h+=txChips(k,[NA],act,"na")+'</section>';
+    if(k==="S")h+='<section class="sec" data-sec="V" role="group" aria-label="C 意識"><h3 class="sechd">C 意識</h3>'+sub("AVPU")+oneChips("avpu",AVPU,t.avpu)+sub("情況")+txChips("cvS",["低血糖"],t.cvS||[])+sub("處置")+txChips("cvA",["糖粉"],t.cvA||[])+'</section>';
   });
   h+='<fieldset><legend>輔助檢查數值（可記錄多次）</legend><div id="tx-vs" class="vs"></div>'+
      '<div class="vsnew"><div class="inl"><label class="fld"><span>測量時間</span><input type="time" id="tx-vt" value="'+hm(Date.now())+'"></label></div><div class="inl">'+num("tx-spo2","血氧","","%",70)+
@@ -614,7 +616,7 @@ function rowAdd(keys,timeId,arr,silent,what){
   if(!silent)toast("已加入 "+hm(v.t)+" 的"+what);return true;
 }
 function vsAdd(silent){if(rowAdd(VKEYS,"tx-vt",form.tx.vs,silent,"測量"))vsList()}
-function dsAdd(silent){if(rowAdd(DKEYS,"tx-dt",form.tx.ds,silent,"評估")){gcsShow();dsList();document.querySelectorAll("#sheet .chip[data-dn],#sheet .chip[data-dn1]").forEach(function(b){b.setAttribute("aria-pressed","false")})}}
+function dsAdd(silent){if(rowAdd(DNEW,"tx-dt",form.tx.ds,silent,"評估")){gcsShow();dsList();document.querySelectorAll("#sheet .chip[data-dn],#sheet .chip[data-dn1]").forEach(function(b){b.setAttribute("aria-pressed","false")})}}
 function txRefresh(scope){
   scope.querySelectorAll(".chip[data-tx]").forEach(function(b){b.setAttribute("aria-pressed",String((form.tx[b.dataset.tx]||[]).indexOf(b.dataset.v)>=0))});
 }
@@ -630,7 +632,7 @@ function txClick(t){
       if(v==="骨盆不穩")arr=arr.filter(function(x){return x!=="骨盆穩固"});}
     tx[key]=arr;
   }
-  txRefresh(t.closest("fieldset"));
+  txRefresh(t.closest("[data-sec],fieldset"));
   if(base==="X"){var on=(tx.X||[]).indexOf("止血帶")>=0;$("tx-tq-row").hidden=!on;if(on&&!$("tx-tq").value)$("tx-tq").value=hm(Date.now())}
   if(base==="C")$("tx-iv-row").hidden=(tx.C||[]).indexOf("輸液")<0;
 }
